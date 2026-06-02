@@ -1,2 +1,3 @@
-# burn
+# Burn
+
 A realistic game about planning and executing space missions
