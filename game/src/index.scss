@@ -3,6 +3,11 @@
     src: url(/InstrumentSerif.ttf) format("truetype");
 }
 
+@font-face {
+    font-family: EnvyCodeR;
+    src: url(/EnvyCodeR.ttf) format("truetype");
+}
+
 html {
     background: black;
     color: white;
@@ -10,9 +15,11 @@ html {
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
+    font-size: 16px;
 }
 
-#loading {
+#splash,
+#title-screen {
     position: fixed;
     left: 0;
     top: 0;
@@ -20,18 +27,33 @@ html {
     height: 100vh;
     background: black;
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    &:not(.show) {
+        opacity: 0;
+        pointer-events: none;
+    }
+    transition: ease-out opacity 0.5s;
+}
+
+#splash {
+    cursor: none;
+    z-index: 999;
+    transition: ease-out opacity 2s;
     h1 {
         margin: auto;
         font-size: 10rem;
         opacity: 0;
-        animation: burn-intro ease-in-out 3s;
         color: #ffeecc;
         text-shadow: 0 0 60px #ffffff;
-        text-align: center;
+    }
+    &.show h1 {
+        animation: splash-intro ease-in-out 3s;
     }
 }
 
-@keyframes burn-intro {
+@keyframes splash-intro {
     from {
         opacity: 0;
         letter-spacing: 3%;
@@ -45,5 +67,32 @@ html {
         opacity: 0;
         letter-spacing: 8%;
         transform: scale(1);
+    }
+}
+
+#title-screen {
+    gap: 1rem;
+    h1 {
+        font-size: 6rem;
+        color: #ffeecc;
+        text-shadow: 0 0 60px #ffffff;
+        letter-spacing: 3%;
+        margin: 0;
+    }
+    button {
+        cursor: pointer;
+        background: none;
+        border: none;
+        font-family: EnvyCodeR, monospace;
+        font-size: 2rem;
+        color: #ffeecc;
+        padding: 0;
+        margin: 0;
+        letter-spacing: 1%;
+        transition: ease-out letter-spacing 0.5s;
+        &:hover {
+            text-decoration: underline;
+            letter-spacing: 10%;
+        }
     }
 }
