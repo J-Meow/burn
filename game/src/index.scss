@@ -8,6 +8,12 @@
     src: url(/EnvyCodeR.ttf) format("truetype");
 }
 
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
 html {
     background: black;
     color: white;
@@ -16,6 +22,52 @@ html {
     user-select: none;
     -webkit-user-select: none;
     font-size: 16px;
+}
+
+#indev-notif {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    font-family: EnvyCodeR, monospace;
+    font-size: 1rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    text-align: right;
+    background: #eeddbb;
+    color: black;
+    padding: 10px;
+    span:first-of-type {
+        font-size: 2rem;
+    }
+    span:last-of-type {
+        font-size: 0.7rem;
+        line-height: 1rem;
+    }
+    max-width: calc(100vw - 2rem);
+    opacity: 1;
+    transform: translateX(0);
+    cursor: pointer;
+    &.dismissed {
+        opacity: 0;
+        transform: translateX(100%);
+        transition:
+            opacity ease-in-out 1s,
+            transform ease-in-out 1s;
+        pointer-events: none;
+    }
+    animation: indev-notif ease-in-out 1s;
+}
+
+@keyframes indev-notif {
+    from {
+        opacity: 0;
+        transform: translateX(-100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 #splash,
