@@ -1,0 +1,49 @@
+@font-face {
+    font-family: InstrumentSerif;
+    src: url(/InstrumentSerif.ttf) format("truetype");
+}
+
+html {
+    background: black;
+    color: white;
+    font-family: InstrumentSerif, serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#loading {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    background: black;
+    display: flex;
+    h1 {
+        margin: auto;
+        font-size: 10rem;
+        opacity: 0;
+        animation: burn-intro ease-in-out 3s;
+        color: #ffeecc;
+        text-shadow: 0 0 60px #ffffff;
+        text-align: center;
+    }
+}
+
+@keyframes burn-intro {
+    from {
+        opacity: 0;
+        letter-spacing: 3%;
+        transform: scale(0.8);
+    }
+    30%,
+    70% {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+        letter-spacing: 8%;
+        transform: scale(1);
+    }
+}
