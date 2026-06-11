@@ -21,13 +21,26 @@ class MyServer(BaseHTTPRequestHandler):
         elif(url.path == "/spkpos"):
             print(url)
             print(query)
-            result = spice.spkpos(query["targ"][0], spice.str2et(query["time"][0]), "J2000", "NONE", query["obs"][0])
-            print(result)
-            req.send_response(200)
-            req.send_header("Access-Control-Allow-Origin", "*")
-            req.send_header("Content-Type", "application/json")
-            req.end_headers()
-            req.wfile.write(bytes(json.dumps({"ok": True, "result": {"x": result[0][0], "y": result[0][1], "z": result[0][2]}}), "utf-8"))
+            start_time = spice.str2et(query["time"][0])
+            def calc(time):
+                return spice.spkpos(query["targ"][0], time, "J2000", "NONE", query["obs"][0])
+            if("interval" in query):
+                results = []
+                for x in range(int(query["intervalcount"][0])):
+                    result = calc(start_time + x * int(query["interval"][0]))
+                    results.append({"x": result[0][0], "y": result[0][1], "z": result[0][2]})
+                req.send_response(200)
+                req.send_header("Access-Control-Allow-Origin", "*")
+                req.send_header("Content-Type", "application/json")
+                req.end_headers()
+                req.wfile.write(bytes(json.dumps({"ok": True, "result": results}), "utf-8"))
+            else:
+                result = calc(start_time)
+                req.send_response(200)
+                req.send_header("Access-Control-Allow-Origin", "*")
+                req.send_header("Content-Type", "application/json")
+                req.end_headers()
+                req.wfile.write(bytes(json.dumps({"ok": True, "result": {"x": result[0][0], "y": result[0][1], "z": result[0][2]}}), "utf-8"))
         else:
             req.send_response(404)
             req.end_headers()
