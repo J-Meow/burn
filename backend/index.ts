@@ -25,7 +25,9 @@ Bun.serve({
                 const outFile = Bun.file("tmp/" + runId + "/out.txt")
                 const outText = await outFile.text()
                 await rm("tmp/" + runId, { recursive: true })
-                return new Response(outText)
+                const res = new Response(outText)
+                res.headers.set("Access-Control-Allow-Origin", "*")
+                return res
             },
         },
     },
