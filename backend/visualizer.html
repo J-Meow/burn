@@ -124,7 +124,6 @@
                         // ctx.strokeStyle = `rgb(0, 0, 255)`
                         // ctx.stroke()
                         for (let i = 0; i < rows.length - 1; i++) {
-                            ctx.beginPath()
                             let pointA = doTransform({
                                 x:
                                     parseFloat(
@@ -181,6 +180,22 @@
                             if (-pointB.z > fov) continue
                             let projectedA = project2d(pointA)
                             let projectedB = project2d(pointB)
+                            if (
+                                (Math.sqrt(
+                                    (projectedA.x - earth.x) ** 2 +
+                                        (projectedA.y - earth.y) ** 2,
+                                ) <
+                                    earthEdge.x - earth.x ||
+                                    Math.sqrt(
+                                        (projectedB.x - earth.x) ** 2 +
+                                            (projectedB.y - earth.y) ** 2,
+                                    ) <
+                                        earthEdge.x - earth.x) &&
+                                pointA.z > transform.z
+                            ) {
+                                continue
+                            }
+                            ctx.beginPath()
                             ctx.moveTo(projectedA.x, projectedA.y)
                             ctx.lineTo(projectedB.x, projectedB.y)
                             ctx.strokeStyle = `hsl(${i * 2}deg, 100%, 50%)`
