@@ -8,6 +8,7 @@ const scripts = {
 }
 Bun.serve({
     port: 7755,
+    idleTimeout: 0,
     routes: {
         "/": new Response("why hello there"),
         "/calculate": {
@@ -21,11 +22,22 @@ Bun.serve({
                 const runId = crypto.randomUUID()
                 await mkdir("tmp/" + runId, { recursive: true })
                 await copyFile(script.path, "tmp/" + runId + "/script.script")
-                await Bun.$`${process.env.GMAT_PATH} ${process.cwd() + "/tmp/" + runId + "/script.script"}`
-                const outFile = Bun.file("tmp/" + runId + "/out.txt")
-                const outText = await outFile.text()
+                let success = false
+                try {
+                    await Bun.$`${process.env.GMAT_PATH} ${process.cwd() + "/tmp/" + runId + "/script.script"}`
+                    success = true
+                } catch (err) {
+                    console.error(err)
+                }
+                let res
+                if (success) {
+                    const outFile = Bun.file("tmp/" + runId + "/out.txt")
+                    const outText = await outFile.text()
+                    res = new Response(outText)
+                } else {
+                    res = new Response(null, { status: 500 })
+                }
                 await rm("tmp/" + runId, { recursive: true })
-                const res = new Response(outText)
                 res.headers.set("Access-Control-Allow-Origin", "*")
                 return res
             },
