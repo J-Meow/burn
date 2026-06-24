@@ -16,8 +16,8 @@
 
 html {
     background: black;
-    color: white;
-    font-family: InstrumentSerif, serif;
+    color: #ffeecc;
+    font-family: EnvyCodeR, monospace;
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
@@ -28,7 +28,6 @@ html {
     position: fixed;
     right: 1rem;
     bottom: 1rem;
-    font-family: EnvyCodeR, monospace;
     font-size: 1rem;
     z-index: 9999;
     display: flex;
@@ -71,22 +70,27 @@ html {
 }
 
 #splash,
-#title-screen {
+#title-screen,
+#ingame {
     position: fixed;
     left: 0;
     top: 0;
     width: 100vw;
     height: 100vh;
     background: black;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    transition: ease-out opacity 0.5s;
     &:not(.show) {
         opacity: 0;
         pointer-events: none;
     }
-    transition: ease-out opacity 0.5s;
+}
+
+#splash,
+#title-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 #splash {
@@ -97,8 +101,8 @@ html {
         margin: auto;
         font-size: 10rem;
         opacity: 0;
-        color: #ffeecc;
         text-shadow: 0 0 60px #ffffff;
+        font-family: InstrumentSerif, serif;
     }
     &.show h1 {
         animation: splash-intro ease-in-out 3s;
@@ -126,18 +130,18 @@ html {
     gap: 1rem;
     h1 {
         font-size: 6rem;
-        color: #ffeecc;
         text-shadow: 0 0 60px #ffffff;
         letter-spacing: 3%;
         margin: 0;
+        font-family: InstrumentSerif, serif;
     }
     button {
         cursor: pointer;
         background: none;
         border: none;
-        font-family: EnvyCodeR, monospace;
+        color: inherit;
+        font: inherit;
         font-size: 2rem;
-        color: #ffeecc;
         padding: 0;
         margin: 0;
         letter-spacing: 1%;
@@ -145,6 +149,82 @@ html {
         &:hover {
             text-decoration: underline;
             letter-spacing: 10%;
+        }
+    }
+}
+
+#ingame {
+    #goal {
+        position: fixed;
+        left: 0;
+        top: 0;
+        #goal-name {
+            font-size: 1.2rem;
+            margin: 0;
+        }
+        ul {
+            margin: 0.7rem 0 0 0;
+            padding: 0 0 0 1.5rem;
+            list-style-type: "* ";
+        }
+        padding: 1rem;
+        border-bottom: 1px solid #ffeecc;
+        border-right: 1px solid #ffeecc;
+        background: black;
+        overflow: hidden;
+    }
+    #timecontrol {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        height: 6rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        .slider {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            max-width: 30rem;
+            align-items: center;
+            align-content: center;
+            height: 30px;
+            cursor: pointer;
+            div {
+                display: inline-block;
+            }
+            .left,
+            .right {
+                width: 100%;
+                z-index: 0;
+            }
+            .dot {
+                width: 0.6rem;
+                height: 0.6rem;
+                border-radius: 99999rem;
+                flex-shrink: 0;
+                margin-left: -0.3rem;
+                margin-right: -0.3rem;
+                z-index: 1;
+            }
+            .left {
+                height: 0.2rem;
+                width: var(--pos, 100%);
+            }
+            .left,
+            .dot {
+                background: #eeddbb;
+            }
+            .right {
+                height: 0.1rem;
+                background: #aa9977;
+                width: calc(100% - var(--pos, 0%));
+            }
+        }
+        span {
+            color: #a19680;
         }
     }
 }
