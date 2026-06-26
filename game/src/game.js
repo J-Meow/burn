@@ -5,7 +5,7 @@ export class Game {
         translate: {
             x: 0,
             y: 0,
-            z: 100,
+            z: -100,
         },
     }
     constructor(canvas) {
@@ -18,8 +18,8 @@ export class Game {
     }
     mouseMove(ev) {
         if (ev.buttons & 1) {
-            this.camera.translate.x += ev.movementX
-            this.camera.translate.y += ev.movementY
+            this.camera.translate.x -= ev.movementX
+            this.camera.translate.y -= ev.movementY
         }
     }
     resize() {
@@ -38,9 +38,9 @@ export class Game {
     }
     camTransform(x, y, z) {
         return [
-            x + this.camera.translate.x,
-            y + this.camera.translate.y,
-            z + this.camera.translate.z,
+            x - this.camera.translate.x,
+            y - this.camera.translate.y,
+            z - this.camera.translate.z,
         ]
     }
     draw() {
