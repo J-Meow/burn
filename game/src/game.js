@@ -48,6 +48,49 @@ export class Game {
         this.ctx.fillStyle = "#ffeecc"
         this.ctx.strokeStyle = "#ffeecc"
         this.ctx.lineWidth = 2
+        const origin = this.project(...this.camTransform(0, 0, 0))
+        this.ctx.beginPath()
+        this.ctx.ellipse(
+            ...origin,
+            Math.abs(
+                this.project(...this.camTransform(50, 0, 0))[0] - origin[0],
+            ),
+            Math.abs(
+                this.project(...this.camTransform(0, 0, 50))[1] - origin[1],
+            ),
+            0,
+            0,
+            Math.PI * 2,
+        )
+        this.ctx.stroke()
+        this.ctx.beginPath()
+        this.ctx.ellipse(
+            ...origin,
+            Math.abs(
+                this.project(...this.camTransform(0, 0, 50))[0] - origin[0],
+            ),
+            Math.abs(
+                this.project(...this.camTransform(0, 50, 0))[1] - origin[1],
+            ),
+            0,
+            0,
+            Math.PI * 2,
+        )
+        this.ctx.stroke()
+        this.ctx.beginPath()
+        this.ctx.ellipse(
+            ...origin,
+            Math.abs(
+                this.project(...this.camTransform(50, 0, 0))[0] - origin[0],
+            ),
+            Math.abs(
+                this.project(...this.camTransform(0, 50, 0))[1] - origin[1],
+            ),
+            0,
+            0,
+            Math.PI * 2,
+        )
+        this.ctx.stroke()
         this.ctx.beginPath()
         this.ctx.moveTo(...this.project(...this.camTransform(-10, 10, 10)))
         this.ctx.lineTo(...this.project(...this.camTransform(10, 10, 10)))
