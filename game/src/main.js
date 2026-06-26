@@ -1,4 +1,8 @@
 import "./index.scss"
+import { Game } from "./game.js"
+
+let currentGame
+
 if (sessionStorage.getItem("nosplash") == "true") {
     document.getElementById("splash").style.display = "none"
     document.getElementById("title-screen").classList.add("show")
@@ -11,6 +15,7 @@ if (sessionStorage.getItem("nosplash") == "true") {
 document.getElementById("title-screen--play").addEventListener("click", () => {
     document.getElementById("title-screen").classList.remove("show")
     document.getElementById("ingame").classList.add("show")
+    currentGame = new Game(document.getElementById("game"))
 })
 if (sessionStorage.getItem("indev-notif-dismissed") == "true") {
     document.getElementById("indev-notif").style.display = "none"
