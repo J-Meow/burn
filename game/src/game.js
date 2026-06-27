@@ -257,7 +257,7 @@ export class Game {
                 },
             })
         }.bind(this)
-        sphere(0, 0, 0, 6378) // 6378 km is radius of earth according to duckduckgo idk
+        sphere(0, 0, 0, 6378) // 6378 km is radius of earth according to wikipedia idk
         for (let i = 0; i < this.data["Sat.ElapsedSecs"].length; i++) {
             drawList.push({
                 z: this.data["Sat.EarthMJ2000Eq.Z"][i],
