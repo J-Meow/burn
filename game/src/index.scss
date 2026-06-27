@@ -25,6 +25,10 @@ html {
     overflow: hidden;
 }
 
+#mobile {
+    display: none;
+}
+
 @media (hover: none) or (max-width: 600px) or (max-height: 600px) {
     #mobile {
         position: fixed;
