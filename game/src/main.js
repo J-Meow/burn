@@ -27,3 +27,8 @@ document.getElementById("indev-notif").addEventListener("click", () => {
     document.getElementById("indev-notif").classList.add("dismissed")
     sessionStorage.setItem("indev-notif-dismissed", "true")
 })
+
+document.getElementById("gitdetails").innerText =
+    `Current commit: ${import.meta.env.VITE_GIT_HASH}`
+document.getElementById("gitdetails").href =
+    `https://github.com/J-Meow/burn/commit/${import.meta.env.VITE_GIT_HASH_LONG}`
