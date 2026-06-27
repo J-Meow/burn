@@ -5,6 +5,9 @@ const scripts = {
     test: {
         path: "../gmat-misc/backend-test.script",
     },
+    "apoapsis-lower": {
+        path: "./scripts/apoapsis-lower.script",
+    },
 }
 Bun.serve({
     port: 7755,
@@ -44,4 +47,3 @@ Bun.serve({
         },
     },
 })
-

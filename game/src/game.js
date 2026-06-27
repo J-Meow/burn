@@ -5,7 +5,7 @@ export class Game {
         translate: {
             x: 0,
             y: 0,
-            z: -100,
+            z: -10000,
         },
     }
     loading = true
@@ -16,17 +16,33 @@ export class Game {
         addEventListener("resize", this.resize.bind(this))
         this.draw()
         addEventListener("mousemove", this.mouseMove.bind(this))
-        fetch("http://localhost:7755/calculate?script=test")
+        fetch(
+            import.meta.env.VITE_GMAT_API_URL +
+                "/calculate?script=apoapsis-lower",
+        )
             .then((response) => response.text())
             .then((text) => {
+                const lines = text.split("\n")
+                const data = {}
+                const keys = lines[0].split(",")
+                keys.forEach((key) => {
+                    data[key] = []
+                })
+                lines.slice(1, -1).forEach((line) => {
+                    const values = line.split(",")
+                    for (let i = 0; i < values.length; i++) {
+                        data[keys[i]].push(parseFloat(values[i]))
+                    }
+                })
+                this.data = data
                 this.loading = false
             })
     }
     mouseMove(ev) {
         this.camera.translate.x =
-            (50 * (ev.clientX - this.width / 2)) / this.width
+            (5000 * (ev.clientX - this.width / 2)) / this.width
         this.camera.translate.y =
-            (50 * (ev.clientY - this.height / 2)) / this.height
+            (5000 * (ev.clientY - this.height / 2)) / this.height
     }
     resize() {
         this.canvas.width = innerWidth * devicePixelRatio
@@ -52,9 +68,6 @@ export class Game {
     draw() {
         requestAnimationFrame(this.draw.bind(this))
         this.ctx.clearRect(0, 0, this.width, this.height)
-        this.ctx.fillStyle = "#000000aa"
-        this.ctx.strokeStyle = "#ffeecc"
-        this.ctx.lineWidth = 2
         if (this.loading) {
             this.ctx.fillStyle = "#ffeecc"
             this.ctx.beginPath()
@@ -142,89 +155,144 @@ export class Game {
             return this.project(...this.camTransform(x, y, z))
         }.bind(this)
         const drawList = []
-        const origin = p(0, 0, 0)
-        drawList.push({
-            z: -50,
-            func: () => {
-                this.ctx.beginPath()
-                this.ctx.ellipse(
-                    ...origin,
-                    Math.abs(p(50, 0, 0)[0] - origin[0]),
-                    Math.abs(p(0, 0, 50)[1] - origin[1]),
-                    0,
-                    p(0, 0, 50)[1] - origin[1] < 0 ? 0 : Math.PI,
-                    p(0, 0, 50)[1] - origin[1] < 0 ? Math.PI : Math.PI * 2,
-                )
-                this.ctx.stroke()
-            },
-        })
-        drawList.push({
-            z: 50,
-            func: () => {
-                this.ctx.beginPath()
-                this.ctx.ellipse(
-                    ...origin,
-                    Math.abs(p(50, 0, 0)[0] - origin[0]),
-                    Math.abs(p(0, 0, 50)[1] - origin[1]),
-                    0,
-                    p(0, 0, 50)[1] - origin[1] > 0 ? 0 : Math.PI,
-                    p(0, 0, 50)[1] - origin[1] > 0 ? Math.PI : Math.PI * 2,
-                )
-                this.ctx.stroke()
-            },
-        })
-        drawList.push({
-            z: -50,
-            func: () => {
-                this.ctx.beginPath()
-                this.ctx.ellipse(
-                    ...origin,
-                    Math.abs(p(0, 0, 50)[0] - origin[0]),
-                    Math.abs(p(0, 50, 0)[1] - origin[1]),
-                    0,
-                    p(0, 0, 50)[0] - origin[0] > 0
-                        ? Math.PI / 2
-                        : (Math.PI / 2) * 3,
-                    p(0, 0, 50)[0] - origin[0] > 0
-                        ? (Math.PI / 2) * 3
-                        : (Math.PI / 2) * 5,
-                )
-                this.ctx.stroke()
-            },
-        })
-        drawList.push({
-            z: 50,
-            func: () => {
-                this.ctx.beginPath()
-                this.ctx.ellipse(
-                    ...origin,
-                    Math.abs(p(0, 0, 50)[0] - origin[0]),
-                    Math.abs(p(0, 50, 0)[1] - origin[1]),
-                    0,
-                    p(0, 0, 50)[0] - origin[0] > 0 ? -Math.PI / 2 : Math.PI / 2,
-                    p(0, 0, 50)[0] - origin[0] > 0
-                        ? Math.PI / 2
-                        : (Math.PI / 2) * 3,
-                )
-                this.ctx.stroke()
-            },
-        })
-        drawList.push({
-            z: 0,
-            func: () => {
-                this.ctx.beginPath()
-                this.ctx.ellipse(
-                    ...origin,
-                    Math.abs(p(50, 0, 0)[0] - origin[0]),
-                    Math.abs(p(0, 50, 0)[1] - origin[1]),
-                    0,
-                    0,
-                    Math.PI * 2,
-                )
-                this.ctx.fill()
-                this.ctx.stroke()
-            },
-        })
+        const sphere = function sphere(x, y, z, r) {
+            const center = p(x, y, z)
+            drawList.push({
+                z: z - r,
+                func: () => {
+                    this.ctx.strokeStyle = "#ffeecc"
+                    this.ctx.lineWidth = 2
+                    this.ctx.beginPath()
+                    this.ctx.ellipse(
+                        ...center,
+                        Math.abs(p(x + r, y, z)[0] - center[0]),
+                        Math.abs(p(x, y, z + r)[1] - center[1]),
+                        0,
+                        p(x, y, z + r)[1] - center[1] < 0 ? 0 : Math.PI,
+                        p(x, y, z + r)[1] - center[1] < 0
+                            ? Math.PI
+                            : Math.PI * 2,
+                    )
+                    this.ctx.stroke()
+                },
+            })
+            drawList.push({
+                z: z + r,
+                func: () => {
+                    this.ctx.strokeStyle = "#ffeecc"
+                    this.ctx.lineWidth = 2
+                    this.ctx.beginPath()
+                    this.ctx.ellipse(
+                        ...center,
+                        Math.abs(p(x + r, y, z)[0] - center[0]),
+                        Math.abs(p(x, y, z + r)[1] - center[1]),
+                        0,
+                        p(x, y, z + r)[1] - center[1] > 0 ? 0 : Math.PI,
+                        p(x, y, z + r)[1] - center[1] > 0
+                            ? Math.PI
+                            : Math.PI * 2,
+                    )
+                    this.ctx.stroke()
+                },
+            })
+            drawList.push({
+                z: z - r,
+                func: () => {
+                    this.ctx.strokeStyle = "#ffeecc"
+                    this.ctx.lineWidth = 2
+                    this.ctx.beginPath()
+                    this.ctx.ellipse(
+                        ...center,
+                        Math.abs(p(x, y, z + r)[0] - center[0]),
+                        Math.abs(p(x, y + r, z)[1] - center[1]),
+                        0,
+                        p(x, y, z + r)[0] - center[0] > 0
+                            ? Math.PI / 2
+                            : (Math.PI / 2) * 3,
+                        p(x, y, z + r)[0] - center[0] > 0
+                            ? (Math.PI / 2) * 3
+                            : (Math.PI / 2) * 5,
+                    )
+                    this.ctx.stroke()
+                },
+            })
+            drawList.push({
+                z: z + r,
+                func: () => {
+                    this.ctx.strokeStyle = "#ffeecc"
+                    this.ctx.lineWidth = 2
+                    this.ctx.beginPath()
+                    this.ctx.ellipse(
+                        ...center,
+                        Math.abs(p(x, y, z + r)[0] - center[0]),
+                        Math.abs(p(x, y + r, z)[1] - center[1]),
+                        0,
+                        p(x, y, z + r)[0] - center[0] > 0
+                            ? -Math.PI / 2
+                            : Math.PI / 2,
+                        p(x, y, z + r)[0] - center[0] > 0
+                            ? Math.PI / 2
+                            : (Math.PI / 2) * 3,
+                    )
+                    this.ctx.stroke()
+                },
+            })
+            drawList.push({
+                z: z,
+                func: () => {
+                    this.ctx.fillStyle = "#000000aa"
+                    this.ctx.strokeStyle = "#ffeecc"
+                    this.ctx.lineWidth = 2
+                    this.ctx.beginPath()
+                    this.ctx.ellipse(
+                        ...center,
+                        Math.abs(p(x + r, y, z)[0] - center[0]),
+                        Math.abs(p(x, y + r, z)[1] - center[1]),
+                        0,
+                        0,
+                        Math.PI * 2,
+                    )
+                    this.ctx.fill()
+                    this.ctx.stroke()
+                },
+            })
+        }.bind(this)
+        sphere(0, 0, 0, 3958) // 3958 km is radius of earth according to duckduckgo idk
+        for (let i = 0; i < this.data["Sat.ElapsedSecs"].length; i++) {
+            drawList.push({
+                z: this.data["Sat.EarthMJ2000Eq.Z"][i],
+                func: () => {
+                    this.ctx.strokeStyle =
+                        "#ffeecc" +
+                        Math.floor(
+                            (this.data["Sat.ElapsedSecs"][i] /
+                                this.data["Sat.ElapsedSecs"][
+                                    this.data["Sat.ElapsedSecs"].length - 1
+                                ]) *
+                                256,
+                        )
+                            .toString(16)
+                            .padStart(2, "0")
+                    this.ctx.lineWidth = 2
+                    this.ctx.beginPath()
+                    this.ctx.moveTo(
+                        ...p(
+                            this.data["Sat.EarthMJ2000Eq.X"][i],
+                            this.data["Sat.EarthMJ2000Eq.Y"][i],
+                            this.data["Sat.EarthMJ2000Eq.Z"][i],
+                        ),
+                    )
+                    this.ctx.lineTo(
+                        ...p(
+                            this.data["Sat.EarthMJ2000Eq.X"][i + 1],
+                            this.data["Sat.EarthMJ2000Eq.Y"][i + 1],
+                            this.data["Sat.EarthMJ2000Eq.Z"][i + 1],
+                        ),
+                    )
+                    this.ctx.stroke()
+                },
+            })
+        }
         drawList
             .sort((a, b) => b.z - a.z)
             .forEach((item) => {

@@ -1,0 +1,161 @@
+%General Mission Analysis Tool(GMAT) Script
+
+Create Spacecraft Sat;
+Sat.DateFormat = TAIModJulian;
+Sat.Epoch = '21545';
+Sat.CoordinateSystem = EarthMJ2000Eq;
+Sat.DisplayStateType = Cartesian;
+Sat.X = 7100;
+Sat.Y = 0;
+Sat.Z = 0;
+Sat.VX = 0;
+Sat.VY = 9;
+Sat.VZ = 0;
+Sat.DryMass = 850;
+Sat.Cd = 2.2;
+Sat.Cr = 1.8;
+Sat.DragArea = 15;
+Sat.SRPArea = 1;
+Sat.SPADDragScaleFactor = 1;
+Sat.SPADSRPScaleFactor = 1;
+Sat.AtmosDensityScaleFactor = 1;
+Sat.ExtendedMassPropertiesModel = 'None';
+Sat.NAIFId = -10000001;
+Sat.NAIFIdReferenceFrame = -9000001;
+Sat.OrbitColor = Red;
+Sat.TargetColor = Teal;
+Sat.OrbitErrorCovariance = [ 1e+70 0 0 0 0 0 ; 0 1e+70 0 0 0 0 ; 0 0 1e+70 0 0 0 ; 0 0 0 1e+70 0 0 ; 0 0 0 0 1e+70 0 ; 0 0 0 0 0 1e+70 ];
+Sat.CdSigma = 1e+70;
+Sat.CrSigma = 1e+70;
+Sat.Id = 'SatId';
+Sat.Attitude = CoordinateSystemFixed;
+Sat.SPADSRPInterpolationMethod = Bilinear;
+Sat.SPADSRPScaleFactorSigma = 1e+70;
+Sat.SPADDragInterpolationMethod = Bilinear;
+Sat.SPADDragScaleFactorSigma = 1e+70;
+Sat.AtmosDensityScaleFactorSigma = 1e+70;
+Sat.ModelFile = 'aura.3ds';
+Sat.ModelOffsetX = 0;
+Sat.ModelOffsetY = 0;
+Sat.ModelOffsetZ = 0;
+Sat.ModelRotationX = 0;
+Sat.ModelRotationY = 0;
+Sat.ModelRotationZ = 0;
+Sat.ModelScale = 1;
+Sat.AttitudeDisplayStateType = 'Quaternion';
+Sat.AttitudeRateDisplayStateType = 'AngularVelocity';
+Sat.AttitudeCoordinateSystem = EarthMJ2000Eq;
+Sat.EulerAngleSequence = '321';
+
+Create ForceModel Propagator1_ForceModel;
+Propagator1_ForceModel.CentralBody = Earth;
+Propagator1_ForceModel.PrimaryBodies = {Earth};
+Propagator1_ForceModel.Drag = None;
+Propagator1_ForceModel.SRP = Off;
+Propagator1_ForceModel.RelativisticCorrection = Off;
+Propagator1_ForceModel.ErrorControl = RSSStep;
+Propagator1_ForceModel.GravityField.Earth.Degree = 4;
+Propagator1_ForceModel.GravityField.Earth.Order = 4;
+Propagator1_ForceModel.GravityField.Earth.StmLimit = 100;
+Propagator1_ForceModel.GravityField.Earth.PotentialFile = 'JGM2.cof';
+Propagator1_ForceModel.GravityField.Earth.TideModel = 'None';
+
+Create ForceModel DefaultProp_ForceModel;
+DefaultProp_ForceModel.CentralBody = Earth;
+DefaultProp_ForceModel.PrimaryBodies = {Earth};
+DefaultProp_ForceModel.Drag = None;
+DefaultProp_ForceModel.SRP = Off;
+DefaultProp_ForceModel.RelativisticCorrection = Off;
+DefaultProp_ForceModel.ErrorControl = RSSStep;
+DefaultProp_ForceModel.GravityField.Earth.Degree = 4;
+DefaultProp_ForceModel.GravityField.Earth.Order = 4;
+DefaultProp_ForceModel.GravityField.Earth.StmLimit = 100;
+DefaultProp_ForceModel.GravityField.Earth.PotentialFile = 'JGM2.cof';
+DefaultProp_ForceModel.GravityField.Earth.TideModel = 'None';
+
+Create Propagator DefaultProp;
+DefaultProp.FM = DefaultProp_ForceModel;
+DefaultProp.Type = RungeKutta89;
+DefaultProp.InitialStepSize = 60;
+DefaultProp.Accuracy = 9.999999999999999e-12;
+DefaultProp.MinStep = 0.001;
+DefaultProp.MaxStep = 27;
+DefaultProp.MaxStepAttempts = 50;
+DefaultProp.StopIfAccuracyIsViolated = true;
+
+Create ReportFile ReportFile1;
+ReportFile1.SolverIterations = Current;
+ReportFile1.UpperLeft = [ 0 0 ];
+ReportFile1.Size = [ 0 0 ];
+ReportFile1.RelativeZOrder = 0;
+ReportFile1.Maximized = false;
+ReportFile1.Filename = './out.txt';
+ReportFile1.Precision = 16;
+ReportFile1.Add = {Sat.ElapsedSecs, Sat.EarthMJ2000Eq.X, Sat.EarthMJ2000Eq.Y, Sat.EarthMJ2000Eq.Z};
+ReportFile1.WriteHeaders = true;
+ReportFile1.LeftJustify = On;
+ReportFile1.ZeroFill = Off;
+ReportFile1.FixedWidth = false;
+ReportFile1.Delimiter = ',';
+ReportFile1.ColumnWidth = 23;
+ReportFile1.WriteReport = true;
+ReportFile1.AppendToExistingFile = false;
+
+Create ChemicalTank FuelTank1
+
+Create ChemicalThruster Thruster1
+Thruster1.CoordinateSystem = Local
+Thruster1.Origin = Earth
+Thruster1.Axes = VNB
+Thruster1.ThrustDirection1 = 1
+Thruster1.ThrustDirection2 = 0
+Thruster1.ThrustDirection3 = 0
+Thruster1.DutyCycle = 1
+Thruster1.ThrustScaleFactor = 1
+Thruster1.DecrementMass = false
+Thruster1.Tank = {FuelTank1}
+Thruster1.GravitationalAccel = 9.810000000000001
+Thruster1.C1 = 10000
+Thruster1.C2 = 0
+Thruster1.C3 = 0
+Thruster1.C4 = 0
+Thruster1.C5 = 0
+Thruster1.C6 = 0
+Thruster1.C7 = 0
+Thruster1.C8 = 0
+Thruster1.C9 = 0
+Thruster1.C10 = 0
+Thruster1.C11 = 0
+Thruster1.C12 = 0
+Thruster1.C13 = 0
+Thruster1.C14 = 0
+Thruster1.C15 = 0
+Thruster1.C16 = 0
+Thruster1.K1 = 300
+Thruster1.K2 = 0
+Thruster1.K3 = 0
+Thruster1.K4 = 0
+Thruster1.K5 = 0
+Thruster1.K6 = 0
+Thruster1.K7 = 0
+Thruster1.K8 = 0
+Thruster1.K9 = 0
+Thruster1.K10 = 0
+Thruster1.K11 = 0
+Thruster1.K12 = 0
+Thruster1.K13 = 0
+Thruster1.K14 = 0
+Thruster1.K15 = 0
+Thruster1.K16 = 0
+
+Sat.Thrusters = {Thruster1}
+Sat.Tanks = {FuelTank1}
+
+Create FiniteBurn FiniteBurn1
+FiniteBurn1.Thrusters = {Thruster1}
+
+BeginMissionSequence;
+Propagate DefaultProp(Sat) {Sat.ElapsedSecs = 14000.0};
+%BeginFiniteBurn FiniteBurn1(Sat)
+%Propagate DefaultProp(Sat) {Sat.ElapsedSecs = 180.0}
+%EndFiniteBurn FiniteBurn1(Sat)  
