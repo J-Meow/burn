@@ -14,13 +14,13 @@ export class Game {
         this.resize()
         addEventListener("resize", this.resize.bind(this))
         this.draw()
-        this.canvas.addEventListener("mousemove", this.mouseMove.bind(this))
+        addEventListener("mousemove", this.mouseMove.bind(this))
     }
     mouseMove(ev) {
-        if (ev.buttons & 1) {
-            this.camera.translate.x -= ev.movementX
-            this.camera.translate.y -= ev.movementY
-        }
+        this.camera.translate.x =
+            (50 * (ev.clientX - this.width / 2)) / this.width
+        this.camera.translate.y =
+            (50 * (ev.clientY - this.height / 2)) / this.height
     }
     resize() {
         this.canvas.width = innerWidth * devicePixelRatio
