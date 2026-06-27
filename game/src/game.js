@@ -8,6 +8,7 @@ export class Game {
             z: -100,
         },
     }
+    loading = true
     constructor(canvas) {
         this.canvas = canvas
         this.ctx = this.canvas.getContext("2d")
@@ -15,6 +16,11 @@ export class Game {
         addEventListener("resize", this.resize.bind(this))
         this.draw()
         addEventListener("mousemove", this.mouseMove.bind(this))
+        fetch("http://localhost:7755/calculate?script=test")
+            .then((response) => response.text())
+            .then((text) => {
+                this.loading = false
+            })
     }
     mouseMove(ev) {
         this.camera.translate.x =
@@ -44,10 +50,94 @@ export class Game {
         ]
     }
     draw() {
+        requestAnimationFrame(this.draw.bind(this))
         this.ctx.clearRect(0, 0, this.width, this.height)
         this.ctx.fillStyle = "#000000aa"
         this.ctx.strokeStyle = "#ffeecc"
         this.ctx.lineWidth = 2
+        if (this.loading) {
+            this.ctx.fillStyle = "#ffeecc"
+            this.ctx.beginPath()
+            this.ctx.ellipse(
+                this.width / 2 +
+                    40 * Math.cos(Date.now() / 300) +
+                    (20 * Math.sin(Date.now() / 100) + 40) *
+                        Math.sin(Date.now() / 200 + Math.PI / 2),
+                this.height / 2 +
+                    40 * Math.sin(Date.now() / 300) +
+                    (20 * Math.sin(Date.now() / 100) + 40) *
+                        Math.cos(Date.now() / 200 + Math.PI / 2),
+                5,
+                5,
+                0,
+                0,
+                Math.PI * 2,
+            )
+            this.ctx.fill()
+            this.ctx.beginPath()
+            this.ctx.ellipse(
+                this.width / 2 +
+                    40 * Math.cos(Date.now() / 300) +
+                    (20 * Math.sin(Date.now() / 100 + Math.PI / 2) + 40) *
+                        Math.sin(Date.now() / 200 + Math.PI),
+                this.height / 2 +
+                    40 * Math.sin(Date.now() / 300) +
+                    (20 * Math.sin(Date.now() / 100 + Math.PI / 2) + 40) *
+                        Math.cos(Date.now() / 200 + Math.PI),
+                5,
+                5,
+                0,
+                0,
+                Math.PI * 2,
+            )
+            this.ctx.fill()
+            this.ctx.beginPath()
+            this.ctx.ellipse(
+                this.width / 2 +
+                    40 * Math.cos(Date.now() / 300) +
+                    (20 * Math.cos(Date.now() / 100) + 40) *
+                        Math.sin(Date.now() / 200 + Math.PI * 1.5),
+                this.height / 2 +
+                    40 * Math.sin(Date.now() / 300) +
+                    (20 * Math.cos(Date.now() / 100) + 40) *
+                        Math.cos(Date.now() / 200 + Math.PI * 1.5),
+                5,
+                5,
+                0,
+                0,
+                Math.PI * 2,
+            )
+            this.ctx.fill()
+            this.ctx.beginPath()
+            this.ctx.ellipse(
+                this.width / 2 +
+                    40 * Math.cos(Date.now() / 300) +
+                    (20 * Math.cos(Date.now() / 100 + Math.PI / 2) + 40) *
+                        Math.sin(Date.now() / 200),
+                this.height / 2 +
+                    40 * Math.sin(Date.now() / 300) +
+                    (20 * Math.cos(Date.now() / 100 + Math.PI / 2) + 40) *
+                        Math.cos(Date.now() / 200),
+                5,
+                5,
+                0,
+                0,
+                Math.PI * 2,
+            )
+            this.ctx.fill()
+            this.ctx.beginPath()
+            this.ctx.ellipse(
+                this.width / 2 + 40 * Math.cos(Date.now() / 300),
+                this.height / 2 + 40 * Math.sin(Date.now() / 300),
+                10,
+                10,
+                0,
+                0,
+                Math.PI * 2,
+            )
+            this.ctx.fill()
+            return
+        }
         const p = function p(x, y, z) {
             return this.project(...this.camTransform(x, y, z))
         }.bind(this)
@@ -140,6 +230,5 @@ export class Game {
             .forEach((item) => {
                 item.func()
             })
-        requestAnimationFrame(this.draw.bind(this))
     }
 }
