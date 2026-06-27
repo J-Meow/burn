@@ -25,6 +25,41 @@ html {
     overflow: hidden;
 }
 
+@media (hover: none) or (max-width: 600px) or (max-height: 600px) {
+    #mobile {
+        position: fixed;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        background: black;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: scroll;
+        h1 {
+            font-size: 6rem;
+            text-shadow: 0 0 60px #ffffff;
+            letter-spacing: 3%;
+            margin: 0;
+            font-family: InstrumentSerif, serif;
+        }
+        p {
+            font-size: 1.2rem;
+            padding: 0.5rem 2rem;
+            margin: 0;
+            text-align: center;
+            @media (hover: none) {
+                &.hasmouse {
+                    display: none;
+                }
+            }
+        }
+    }
+}
+
 #indev-notif {
     position: fixed;
     right: 1rem;
