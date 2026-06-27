@@ -39,10 +39,15 @@ export class Game {
                 lines.slice(1, -1).forEach((line) => {
                     const values = line.split(",")
                     for (let i = 0; i < values.length; i++) {
-                        data[keys[i]].push(parseFloat(values[i]))
+                        data[keys[i]].push(
+                            keys[i] == "Sat.A1Gregorian"
+                                ? values[i]
+                                : parseFloat(values[i]),
+                        )
                     }
                 })
                 this.data = data
+                this.moveSlider(1)
                 this.loading = false
             })
     }
@@ -54,26 +59,38 @@ export class Game {
         this.sliderUpdate(ev.clientX)
         this.sliderDragging = false
     }
+    moveSlider(pos) {
+        this.sliderPos = pos
+        this.timeControl
+            .querySelector(".slider")
+            .style.setProperty("--pos", this.sliderPos * 100 + "%")
+        const seconds =
+            this.sliderPos *
+            this.data["Sat.ElapsedSecs"][
+                this.data["Sat.ElapsedSecs"].length - 1
+            ]
+        this.currentTimeIndex =
+            [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
+                (x) => x > seconds,
+            ) - 1
+        this.timeControl.querySelector("span").innerText = this.data[
+            "Sat.A1Gregorian"
+        ][this.currentTimeIndex].slice(0, -4)
+    }
     sliderUpdate(clientX) {
         if (this.sliderDragging) {
             const sliderBounds = this.timeControl
                 .querySelector(".slider")
                 .getBoundingClientRect()
-            this.sliderPos = (clientX - sliderBounds.left) / sliderBounds.width
-            if (this.sliderPos < 0) this.sliderPos = 0
-            if (this.sliderPos > 1) this.sliderPos = 1
-            this.timeControl
-                .querySelector(".slider")
-                .style.setProperty("--pos", this.sliderPos * 100 + "%")
-            const seconds =
-                this.sliderPos *
-                this.data["Sat.ElapsedSecs"][
-                    this.data["Sat.ElapsedSecs"].length - 1
-                ]
-            this.currentTimeIndex =
-                [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
-                    (x) => x > seconds,
-                ) - 1
+            this.moveSlider(
+                Math.max(
+                    0,
+                    Math.min(
+                        (clientX - sliderBounds.left) / sliderBounds.width,
+                        1,
+                    ),
+                ),
+            )
         }
     }
     mouseMove(ev) {
