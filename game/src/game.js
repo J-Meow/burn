@@ -9,8 +9,16 @@ export class Game {
         },
     }
     loading = true
-    constructor(canvas) {
+    sliderDragging = false
+    sliderPos = 0
+    currentTimeIndex = 0
+    constructor(canvas, timeControl) {
         this.canvas = canvas
+        this.timeControl = timeControl
+        this.timeControl
+            .querySelector(".slider")
+            .addEventListener("mousedown", this.sliderStart.bind(this))
+        addEventListener("mouseup", this.sliderStop.bind(this))
         this.ctx = this.canvas.getContext("2d")
         this.resize()
         addEventListener("resize", this.resize.bind(this))
@@ -38,11 +46,42 @@ export class Game {
                 this.loading = false
             })
     }
+    sliderStart(ev) {
+        this.sliderDragging = true
+        this.sliderUpdate(ev.clientX)
+    }
+    sliderStop(ev) {
+        this.sliderUpdate(ev.clientX)
+        this.sliderDragging = false
+    }
+    sliderUpdate(clientX) {
+        if (this.sliderDragging) {
+            const sliderBounds = this.timeControl
+                .querySelector(".slider")
+                .getBoundingClientRect()
+            this.sliderPos = (clientX - sliderBounds.left) / sliderBounds.width
+            if (this.sliderPos < 0) this.sliderPos = 0
+            if (this.sliderPos > 1) this.sliderPos = 1
+            this.timeControl
+                .querySelector(".slider")
+                .style.setProperty("--pos", this.sliderPos * 100 + "%")
+            const seconds =
+                this.sliderPos *
+                this.data["Sat.ElapsedSecs"][
+                    this.data["Sat.ElapsedSecs"].length - 1
+                ]
+            this.currentTimeIndex =
+                [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
+                    (x) => x > seconds,
+                ) - 1
+        }
+    }
     mouseMove(ev) {
         this.camera.translate.x =
             (5000 * (ev.clientX - this.width / 2)) / this.width
         this.camera.translate.y =
             (5000 * (ev.clientY - this.height / 2)) / this.height
+        this.sliderUpdate(ev.clientX)
     }
     resize() {
         this.canvas.width = innerWidth * devicePixelRatio
@@ -258,18 +297,24 @@ export class Game {
             })
         }.bind(this)
         sphere(0, 0, 0, 6378) // 6378 km is radius of earth according to wikipedia idk
-        for (let i = 0; i < this.data["Sat.ElapsedSecs"].length; i++) {
+        for (let i = 0; i < this.currentTimeIndex; i++) {
             drawList.push({
                 z: this.data["Sat.EarthMJ2000Eq.Z"][i],
                 func: () => {
                     this.ctx.strokeStyle =
                         "#ffeecc" +
                         Math.floor(
-                            (this.data["Sat.ElapsedSecs"][i] /
-                                this.data["Sat.ElapsedSecs"][
-                                    this.data["Sat.ElapsedSecs"].length - 1
-                                ]) *
-                                256,
+                            (Math.max(
+                                0,
+                                1200 -
+                                    (this.data["Sat.ElapsedSecs"][
+                                        this.currentTimeIndex
+                                    ] -
+                                        this.data["Sat.ElapsedSecs"][i]),
+                            ) /
+                                1200) *
+                                216 +
+                                40,
                         )
                             .toString(16)
                             .padStart(2, "0")
