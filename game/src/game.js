@@ -12,16 +12,23 @@ export class Game {
     sliderDragging = false
     sliderPos = 0
     currentTimeIndex = 0
+    playing = false
+    elapsedSecsPlaying = 0
+    lastTick = Date.now()
     constructor(canvas, timeControl) {
         this.canvas = canvas
         this.timeControl = timeControl
         this.timeControl
             .querySelector(".slider")
             .addEventListener("mousedown", this.sliderStart.bind(this))
+        this.timeControl
+            .querySelector(".playpause")
+            .addEventListener("click", this.playPause.bind(this))
         addEventListener("mouseup", this.sliderStop.bind(this))
         this.ctx = this.canvas.getContext("2d")
         this.resize()
         addEventListener("resize", this.resize.bind(this))
+        this.tick()
         this.draw()
         addEventListener("mousemove", this.mouseMove.bind(this))
         fetch(
@@ -51,8 +58,23 @@ export class Game {
                 this.loading = false
             })
     }
+    playPause() {
+        this.playing = !this.playing
+        this.timeControl
+            .querySelector(".playpause")
+            .setAttribute("data-state", this.playing ? "pause" : "play")
+        if (this.playing) {
+            if (this.sliderPos == 1) {
+                this.elapsedSecsPlaying = 0
+            } else {
+                this.elapsedSecsPlaying =
+                    this.data["Sat.ElapsedSecs"][this.currentTimeIndex]
+            }
+        }
+    }
     sliderStart(ev) {
         this.sliderDragging = true
+        if (this.playing) this.playPause()
         this.sliderUpdate(ev.clientX)
     }
     sliderStop(ev) {
@@ -120,6 +142,30 @@ export class Game {
             y - this.camera.translate.y,
             z - this.camera.translate.z,
         ]
+    }
+    tick() {
+        setTimeout(this.tick.bind(this), 1000 / 60)
+        const delta = Date.now() - this.lastTick
+        this.lastTick = Date.now()
+        if (this.playing) {
+            this.elapsedSecsPlaying += delta * 10
+            if (
+                this.elapsedSecsPlaying >=
+                this.data["Sat.ElapsedSecs"][
+                    this.data["Sat.ElapsedSecs"].length - 1
+                ]
+            ) {
+                this.moveSlider(1)
+                this.playPause()
+            } else {
+                this.moveSlider(
+                    this.elapsedSecsPlaying /
+                        this.data["Sat.ElapsedSecs"][
+                            this.data["Sat.ElapsedSecs"].length - 1
+                        ],
+                )
+            }
+        }
     }
     draw() {
         requestAnimationFrame(this.draw.bind(this))
@@ -314,7 +360,17 @@ export class Game {
             })
         }.bind(this)
         sphere(0, 0, 0, 6378) // 6378 km is radius of earth according to wikipedia idk
-        for (let i = 0; i < this.currentTimeIndex; i++) {
+        for (
+            let i =
+                [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
+                    (x) =>
+                        x >
+                        this.data["Sat.ElapsedSecs"][this.currentTimeIndex] -
+                            6000,
+                ) - 1;
+            i < this.currentTimeIndex;
+            i++
+        ) {
             drawList.push({
                 z: this.data["Sat.EarthMJ2000Eq.Z"][i],
                 func: () => {
@@ -323,15 +379,14 @@ export class Game {
                         Math.floor(
                             (Math.max(
                                 0,
-                                1200 -
+                                6000 -
                                     (this.data["Sat.ElapsedSecs"][
                                         this.currentTimeIndex
                                     ] -
                                         this.data["Sat.ElapsedSecs"][i]),
                             ) /
-                                1200) *
-                                216 +
-                                40,
+                                6000) *
+                                256,
                         )
                             .toString(16)
                             .padStart(2, "0")
