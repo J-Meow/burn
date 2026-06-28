@@ -9,6 +9,7 @@ const scripts = {
         path: "./scripts/apoapsis-lower.script",
     },
 }
+const cache = new Map()
 Bun.serve({
     port: 7755,
     idleTimeout: 0,
@@ -22,27 +23,37 @@ Bun.serve({
                     return new Response(null, { status: 400 })
                 }
                 console.log(script)
-                const runId = crypto.randomUUID()
-                await mkdir("tmp/" + runId, { recursive: true })
-                await copyFile(script.path, "tmp/" + runId + "/script.script")
-                let success = false
-                try {
-                    await Bun.$`${process.env.GMAT_PATH} ${process.cwd() + "/tmp/" + runId + "/script.script"}`
-                    success = true
-                } catch (err) {
-                    console.error(err)
-                }
-                let res
-                if (success) {
-                    const outFile = Bun.file("tmp/" + runId + "/out.txt")
-                    const outText = await outFile.text()
-                    res = new Response(outText)
+                if (cache.has(script)) {
+                    let res = new Response(cache.get(script))
+                    res.headers.set("Access-Control-Allow-Origin", "*")
+                    return res
                 } else {
-                    res = new Response(null, { status: 500 })
+                    const runId = crypto.randomUUID()
+                    await mkdir("tmp/" + runId, { recursive: true })
+                    await copyFile(
+                        script.path,
+                        "tmp/" + runId + "/script.script",
+                    )
+                    let success = false
+                    try {
+                        await Bun.$`${process.env.GMAT_PATH} ${process.cwd() + "/tmp/" + runId + "/script.script"}`
+                        success = true
+                    } catch (err) {
+                        console.error(err)
+                    }
+                    let res
+                    if (success) {
+                        const outFile = Bun.file("tmp/" + runId + "/out.txt")
+                        const outText = await outFile.text()
+                        cache.set(script, outText)
+                        res = new Response(outText)
+                    } else {
+                        res = new Response(null, { status: 500 })
+                    }
+                    await rm("tmp/" + runId, { recursive: true })
+                    res.headers.set("Access-Control-Allow-Origin", "*")
+                    return res
                 }
-                await rm("tmp/" + runId, { recursive: true })
-                res.headers.set("Access-Control-Allow-Origin", "*")
-                return res
             },
         },
     },
