@@ -155,7 +155,7 @@ Create FiniteBurn FiniteBurn1
 FiniteBurn1.Thrusters = {Thruster1}
 
 BeginMissionSequence;
-Propagate DefaultProp(Sat) {Sat.ElapsedSecs = 140000.0};
+Propagate DefaultProp(Sat) {Sat.ElapsedSecs = 70000.0};
 %BeginFiniteBurn FiniteBurn1(Sat)
 %Propagate DefaultProp(Sat) {Sat.ElapsedSecs = 180.0}
 %EndFiniteBurn FiniteBurn1(Sat)  
