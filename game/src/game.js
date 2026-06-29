@@ -15,7 +15,11 @@ export class Game {
     playing = false
     elapsedSecsPlaying = 0
     lastTick = Date.now()
+    consistentRandom = []
     constructor(canvas, timeControl) {
+        for (let i = 0; i < 1000; i++) {
+            this.consistentRandom.push(Math.random())
+        }
         this.canvas = canvas
         this.timeControl = timeControl
         this.timeControl
@@ -155,7 +159,7 @@ export class Game {
         const delta = Date.now() - this.lastTick
         this.lastTick = Date.now()
         if (this.playing) {
-            this.elapsedSecsPlaying += delta * 10
+            this.elapsedSecsPlaying += delta
             if (
                 this.elapsedSecsPlaying >=
                 this.data["Sat.ElapsedSecs"][
@@ -417,6 +421,97 @@ export class Game {
                 },
             })
         }
+        drawList.push({
+            z: this.data["Sat.EarthMJ2000Eq.Z"][this.currentTimeIndex],
+            func: () => {
+                this.ctx.fillStyle = "#ffeecc"
+                this.ctx.beginPath()
+                const point = p(
+                    this.data["Sat.EarthMJ2000Eq.X"][this.currentTimeIndex],
+                    this.data["Sat.EarthMJ2000Eq.Y"][this.currentTimeIndex],
+                    this.data["Sat.EarthMJ2000Eq.Z"][this.currentTimeIndex],
+                )
+                const x = point[0],
+                    y = point[1]
+                this.ctx.moveTo(x - 6, y)
+                this.ctx.lineTo(x, y - 6)
+                this.ctx.lineTo(x + 6, y)
+                this.ctx.lineTo(x, y + 6)
+                this.ctx.fill()
+            },
+        })
+        let randomNumId = 0
+        const getRandom = function getRandom() {
+            if (this.consistentRandom.length == randomNumId) {
+                for (let i = 0; i < 1000; i++) {
+                    this.consistentRandom.push(Math.random())
+                }
+            }
+            return this.consistentRandom[randomNumId++]
+        }.bind(this)
+        let particles = []
+        let timeIndex = 0
+        let particleTick = 0
+        for (
+            let i = 0;
+            i < this.data["Sat.ElapsedSecs"][this.currentTimeIndex];
+            i++
+        ) {
+            particleTick++
+            while (this.data["Sat.ElapsedSecs"][timeIndex] < i) {
+                timeIndex++
+            }
+            if (i > 71000 && i < 72500 && particleTick >= 10) {
+                particleTick = 0
+                particles.push({
+                    x: this.data["Sat.EarthMJ2000Eq.X"][timeIndex],
+                    y: this.data["Sat.EarthMJ2000Eq.Y"][timeIndex],
+                    z: this.data["Sat.EarthMJ2000Eq.Z"][timeIndex],
+                    vx:
+                        this.data["Sat.EarthMJ2000Eq.VX"][timeIndex] * 2 +
+                        (getRandom() - 0.5) * 6,
+                    vy:
+                        this.data["Sat.EarthMJ2000Eq.VY"][timeIndex] * 2 +
+                        (getRandom() - 0.5) * 6,
+                    vz:
+                        this.data["Sat.EarthMJ2000Eq.VZ"][timeIndex] * 2 +
+                        (getRandom() - 0.5) * 6,
+                    size: getRandom() * 2 + 2,
+                    lifeLeft: 300,
+                })
+            }
+            particles.forEach((particle) => {
+                particle.x += particle.vx
+                particle.y += particle.vy
+                particle.z += particle.vz
+                particle.lifeLeft -= 1
+            })
+            particles = particles.filter((x) => x.lifeLeft > 0)
+        }
+        particles.forEach((particle) => {
+            drawList.push({
+                z: particle.z,
+                func: () => {
+                    this.ctx.fillStyle = "#ffeecc"
+                    this.ctx.globalAlpha = particle.lifeLeft / 800
+                    this.ctx.beginPath()
+                    const point = p(particle.x, particle.y, particle.z)
+                    const x = point[0],
+                        y = point[1]
+                    this.ctx.ellipse(
+                        x,
+                        y,
+                        particle.size,
+                        particle.size,
+                        0,
+                        0,
+                        Math.PI * 2,
+                    )
+                    this.ctx.fill()
+                    this.ctx.globalAlpha = 1
+                },
+            })
+        })
         drawList
             .sort((a, b) => b.z - a.z)
             .forEach((item) => {
