@@ -81,7 +81,7 @@ DefaultProp.Accuracy = 9.999999999999999e-12;
 DefaultProp.MinStep = 0.001;
 DefaultProp.MaxStep = 4;
 DefaultProp.MaxStepAttempts = 50;
-DefaultProp.StopIfAccuracyIsViolated = true;
+DefaultProp.StopIfAccuracyIsViolated = false;
 
 Create ReportFile ReportFile1;
 ReportFile1.SolverIterations = Current;
@@ -155,8 +155,9 @@ Create FiniteBurn FiniteBurn1
 FiniteBurn1.Thrusters = {Thruster1}
 
 BeginMissionSequence;
-Propagate DefaultProp(Sat) {Sat.ElapsedSecs = 71000.0};
-BeginFiniteBurn FiniteBurn1(Sat)
-Propagate DefaultProp(Sat) {Sat.ElapsedSecs = 1500.0}
-EndFiniteBurn FiniteBurn1(Sat)  
-Propagate DefaultProp(Sat) {Sat.ElapsedSecs = 70000.0};
+%Propagate DefaultProp(Sat) {Sat.ElapsedSecs = 71000.0};
+%BeginFiniteBurn FiniteBurn1(Sat)
+%Propagate DefaultProp(Sat) {Sat.ElapsedSecs = 1500.0}
+%EndFiniteBurn FiniteBurn1(Sat)  
+%Propagate DefaultProp(Sat) {Sat.ElapsedSecs = 70000.0};
+

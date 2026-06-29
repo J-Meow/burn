@@ -1,4 +1,4 @@
-import { mkdir, copyFile, rm } from "node:fs/promises"
+import { mkdir, copyFile, rm, appendFile } from "node:fs/promises"
 
 console.log("Starting server on port 7755")
 const scripts = {
@@ -7,9 +7,52 @@ const scripts = {
     },
     "apoapsis-lower": {
         path: "./scripts/apoapsis-lower.script",
+        sequenceActions: {
+            prop: (seconds) => {
+                if (isNaN(seconds)) {
+                    return false
+                }
+                if (typeof seconds != "number") {
+                    return false
+                }
+                if (seconds <= 0) {
+                    return false
+                }
+                if (seconds > 100000) {
+                    return false
+                }
+                return `Propagate DefaultProp(Sat) {Sat.ElapsedSecs = ${seconds}};\n`
+            },
+            burn: (seconds) => {
+                if (isNaN(seconds)) {
+                    return false
+                }
+                if (typeof seconds != "number") {
+                    return false
+                }
+                if (seconds <= 0) {
+                    return false
+                }
+                if (seconds > 100000) {
+                    return false
+                }
+                return `BeginFiniteBurn FiniteBurn1(Sat)
+Propagate DefaultProp(Sat) {Sat.ElapsedSecs = ${seconds}};
+EndFiniteBurn FiniteBurn1(Sat)\n`
+            },
+        },
     },
 }
 const cache = new Map()
+const cacheUseTimes = []
+const ips = new Map()
+setInterval(() => {
+    for (const [key, value] of ips) {
+        if (value.startTime < Date.now() - 30000) {
+            ips.delete(key)
+        }
+    }
+}, 120000)
 Bun.serve({
     port: 7755,
     idleTimeout: 0,
@@ -22,17 +65,78 @@ Bun.serve({
                 if (!script) {
                     return new Response(null, { status: 400 })
                 }
-                console.log(script)
-                if (cache.has(script)) {
-                    let res = new Response(cache.get(script))
+                let extraScriptContent = ""
+                try {
+                    const sequenceJson = JSON.parse(
+                        url.searchParams.get("sequence"),
+                    )
+                    if (sequenceJson.length > 20) {
+                        return new Response(null, { status: 400 })
+                    }
+                    for (let i = 0; i < sequenceJson.length; i++) {
+                        const action = sequenceJson[i]
+                        if (
+                            Object.keys(script.sequenceActions).includes(
+                                action.type,
+                            )
+                        ) {
+                            const newContent = script.sequenceActions[
+                                action.type
+                            ](action.value)
+                            if (newContent) {
+                                extraScriptContent += newContent
+                            } else {
+                                return new Response(null, { status: 400 })
+                            }
+                        }
+                    }
+                } catch (_) {}
+                if (cache.has(script.path + ";" + extraScriptContent)) {
+                    if (
+                        cacheUseTimes.includes(
+                            script.path + ";" + extraScriptContent,
+                        )
+                    ) {
+                        cacheUseTimes.splice(
+                            cacheUseTimes.indexOf(
+                                script.path + ";" + extraScriptContent,
+                            ),
+                            1,
+                        )
+                    }
+                    cacheUseTimes.push(script.path + ";" + extraScriptContent)
+                    let res = new Response(
+                        cache.get(script.path + ";" + extraScriptContent),
+                    )
                     res.headers.set("Access-Control-Allow-Origin", "*")
                     return res
                 } else {
+                    if (ips.has(req.headers.get("X-Real-IP"))) {
+                        let old = ips.get(req.headers.get("X-Real-IP"))
+                        if (old.startTime < Date.now() - 30000) {
+                            ips.set(req.headers.get("X-Real-IP"), {
+                                startTime: Date.now(),
+                                requests: 1,
+                            })
+                        } else {
+                            if (old.requests > 10) {
+                                return new Response("please slow down", {
+                                    status: 419,
+                                })
+                            }
+                            old.requests++
+                            ips.set(req.headers.get("X-Real-IP"), old)
+                        }
+                    }
                     const runId = crypto.randomUUID()
                     await mkdir("tmp/" + runId, { recursive: true })
                     await copyFile(
                         script.path,
                         "tmp/" + runId + "/script.script",
+                    )
+                    await appendFile(
+                        "tmp/" + runId + "/script.script",
+                        extraScriptContent,
                     )
                     let success = false
                     try {
@@ -43,10 +147,26 @@ Bun.serve({
                     }
                     let res
                     if (success) {
-                        const outFile = Bun.file("tmp/" + runId + "/out.txt")
-                        const outText = await outFile.text()
-                        cache.set(script, outText)
-                        res = new Response(outText)
+                        try {
+                            const outFile = Bun.file(
+                                "tmp/" + runId + "/out.txt",
+                            )
+                            const outText = await outFile.text()
+                            cache.set(
+                                script.path + ";" + extraScriptContent,
+                                outText,
+                            )
+                            cacheUseTimes.push(
+                                script.path + ";" + extraScriptContent,
+                            )
+                            if (cacheUseTimes.length > 10) {
+                                cache.delete(cacheUseTimes.shift())
+                            }
+                            res = new Response(outText)
+                        } catch (err) {
+                            console.error(err)
+                            res = new Response(null, { status: 500 })
+                        }
                     } else {
                         res = new Response(null, { status: 500 })
                     }

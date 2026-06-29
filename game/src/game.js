@@ -33,7 +33,14 @@ export class Game {
         addEventListener("mousemove", this.mouseMove.bind(this))
         fetch(
             import.meta.env.VITE_GMAT_API_URL +
-                "/calculate?script=apoapsis-lower",
+                "/calculate?script=apoapsis-lower&sequence=" +
+                encodeURIComponent(
+                    JSON.stringify([
+                        { type: "prop", value: 71000 },
+                        { type: "burn", value: 1500 },
+                        { type: "prop", value: 70000 },
+                    ]),
+                ),
         )
             .then((response) => response.text())
             .then((text) => {
