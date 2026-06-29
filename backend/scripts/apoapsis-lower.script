@@ -11,7 +11,7 @@ Sat.Z = 0;
 Sat.VX = 0;
 Sat.VY = 9;
 Sat.VZ = 0;
-Sat.DryMass = 850;
+Sat.DryMass = 1000;
 Sat.Cd = 2.2;
 Sat.Cr = 1.8;
 Sat.DragArea = 15;
@@ -79,7 +79,7 @@ DefaultProp.Type = RungeKutta89;
 DefaultProp.InitialStepSize = 60;
 DefaultProp.Accuracy = 9.999999999999999e-12;
 DefaultProp.MinStep = 0.001;
-DefaultProp.MaxStep = 1;
+DefaultProp.MaxStep = 4;
 DefaultProp.MaxStepAttempts = 50;
 DefaultProp.StopIfAccuracyIsViolated = true;
 
@@ -107,7 +107,7 @@ Create ChemicalThruster Thruster1
 Thruster1.CoordinateSystem = Local
 Thruster1.Origin = Earth
 Thruster1.Axes = VNB
-Thruster1.ThrustDirection1 = 1
+Thruster1.ThrustDirection1 = -1
 Thruster1.ThrustDirection2 = 0
 Thruster1.ThrustDirection3 = 0
 Thruster1.DutyCycle = 1
@@ -115,7 +115,7 @@ Thruster1.ThrustScaleFactor = 1
 Thruster1.DecrementMass = false
 Thruster1.Tank = {FuelTank1}
 Thruster1.GravitationalAccel = 9.810000000000001
-Thruster1.C1 = 10000
+Thruster1.C1 = 1000
 Thruster1.C2 = 0
 Thruster1.C3 = 0
 Thruster1.C4 = 0
@@ -131,7 +131,7 @@ Thruster1.C13 = 0
 Thruster1.C14 = 0
 Thruster1.C15 = 0
 Thruster1.C16 = 0
-Thruster1.K1 = 300
+Thruster1.K1 = 1
 Thruster1.K2 = 0
 Thruster1.K3 = 0
 Thruster1.K4 = 0
@@ -155,7 +155,8 @@ Create FiniteBurn FiniteBurn1
 FiniteBurn1.Thrusters = {Thruster1}
 
 BeginMissionSequence;
+Propagate DefaultProp(Sat) {Sat.ElapsedSecs = 71000.0};
+BeginFiniteBurn FiniteBurn1(Sat)
+Propagate DefaultProp(Sat) {Sat.ElapsedSecs = 1500.0}
+EndFiniteBurn FiniteBurn1(Sat)  
 Propagate DefaultProp(Sat) {Sat.ElapsedSecs = 70000.0};
-%BeginFiniteBurn FiniteBurn1(Sat)
-%Propagate DefaultProp(Sat) {Sat.ElapsedSecs = 180.0}
-%EndFiniteBurn FiniteBurn1(Sat)  
