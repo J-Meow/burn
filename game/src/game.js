@@ -128,18 +128,22 @@ export class Game {
     }
     mouseMove(ev) {
         this.camera.translate.x =
-            (5000 * (ev.clientX - this.width / 2)) / this.width
+            (5000 * (ev.clientX - this.canvas.width / devicePixelRatio / 2)) /
+            (this.canvas.width / devicePixelRatio)
         this.camera.translate.y =
-            (5000 * (ev.clientY - this.height / 2)) / this.height
+            (5000 * (ev.clientY - this.canvas.height / devicePixelRatio / 2)) /
+            (this.canvas.height / devicePixelRatio)
         this.sliderUpdate(ev.clientX)
     }
     resize() {
         this.canvas.width = innerWidth * devicePixelRatio
         this.canvas.height = innerHeight * devicePixelRatio
-        this.width = innerWidth
-        this.height = innerHeight
+        const scale = innerWidth / 1400
+        console.log(scale)
+        this.width = innerWidth / scale
+        this.height = innerHeight / scale
         this.ctx.resetTransform()
-        this.ctx.scale(devicePixelRatio, devicePixelRatio)
+        this.ctx.scale(devicePixelRatio * scale, devicePixelRatio * scale)
     }
     project(x, y, z) {
         return [
