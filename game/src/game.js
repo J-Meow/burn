@@ -16,6 +16,12 @@ export class Game {
     elapsedSecsPlaying = 0
     lastTick = Date.now()
     consistentRandom = []
+    missionSequence = [
+        { type: "prop", value: 71000 },
+        { type: "burn", value: 1500 },
+        { type: "prop", value: 20000 },
+    ]
+    lookAheadTime = 20000
     constructor(canvas, timeControl) {
         for (let i = 0; i < 1000; i++) {
             this.consistentRandom.push(Math.random())
@@ -35,16 +41,19 @@ export class Game {
         this.tick()
         this.draw()
         addEventListener("mousemove", this.mouseMove.bind(this))
+        document
+            .getElementById("burnstart")
+            .addEventListener("click", this.startBurn.bind(this))
+        this.updateData(() => {
+            this.moveSlider(1)
+            this.loading = false
+        })
+    }
+    updateData(callback) {
         fetch(
             import.meta.env.VITE_GMAT_API_URL +
                 "/calculate?script=apoapsis-lower&sequence=" +
-                encodeURIComponent(
-                    JSON.stringify([
-                        { type: "prop", value: 71000 },
-                        { type: "burn", value: 1500 },
-                        { type: "prop", value: 70000 },
-                    ]),
-                ),
+                encodeURIComponent(JSON.stringify(this.missionSequence)),
         )
             .then((response) => response.text())
             .then((text) => {
@@ -65,9 +74,29 @@ export class Game {
                     }
                 })
                 this.data = data
-                this.moveSlider(1)
-                this.loading = false
+                callback()
             })
+    }
+    startBurn() {
+        const totalLength = this.missionSequence.reduce(
+            (a, x) => (a += x.value),
+            0,
+        )
+        const earliestAllowedTime = totalLength - this.lookAheadTime
+        this.missionSequence.pop()
+        this.missionSequence.push({ type: "burn", value: 3000 })
+        this.missionSequence.push({ type: "prop", value: this.lookAheadTime })
+        const beforeBurnLastTimeIndex =
+            [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
+                (x) => x > earliestAllowedTime,
+            ) - 1
+        this.updateData(() => {
+            this.sliderPos = 0 // setting to 0 here so that this.elapsedSecsPlaying isn't set to 0 in playPause(). the actual value doesn't matter much here as long as it's not 1
+            this.currentTimeIndex = beforeBurnLastTimeIndex
+            if (!this.playing) {
+                this.playPause()
+            }
+        })
     }
     playPause() {
         this.playing = !this.playing
@@ -139,7 +168,6 @@ export class Game {
         this.canvas.width = innerWidth * devicePixelRatio
         this.canvas.height = innerHeight * devicePixelRatio
         const scale = innerWidth / 1400
-        console.log(scale)
         this.width = innerWidth / scale
         this.height = innerHeight / scale
         this.ctx.resetTransform()
@@ -456,6 +484,16 @@ export class Game {
         let particles = []
         let timeIndex = 0
         let particleTick = 0
+        let burnTimes = []
+        let elapsedSecs = 0
+        this.missionSequence.forEach((item) => {
+            if (item.type == "prop") {
+                elapsedSecs += item.value
+            }
+            if (item.type == "burn") {
+                burnTimes.push([elapsedSecs, (elapsedSecs += item.value)])
+            }
+        })
         for (
             let i = 0;
             i < this.data["Sat.ElapsedSecs"][this.currentTimeIndex];
@@ -465,7 +503,10 @@ export class Game {
             while (this.data["Sat.ElapsedSecs"][timeIndex] < i) {
                 timeIndex++
             }
-            if (i > 71000 && i < 72500 && particleTick >= 10) {
+            if (
+                burnTimes.filter((x) => x[0] < i && i < x[1]).length &&
+                particleTick >= 10
+            ) {
                 particleTick = 0
                 particles.push({
                     x: this.data["Sat.EarthMJ2000Eq.X"][timeIndex],
