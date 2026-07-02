@@ -237,12 +237,11 @@ html {
     #burncontrol {
         z-index: 1;
         position: fixed;
-        left: 0;
-        top: 10rem;
+        right: 0;
+        top: 0;
         padding: 1rem;
-        border-top: 1px solid #ffeecc;
         border-bottom: 1px solid #ffeecc;
-        border-right: 1px solid #ffeecc;
+        border-left: 1px solid #ffeecc;
         background: black;
         overflow: hidden;
         input,
