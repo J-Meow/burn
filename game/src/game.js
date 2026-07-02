@@ -13,15 +13,17 @@ export class Game {
     sliderPos = 0
     currentTimeIndex = 0
     playing = false
+    startedPlayBeforeNow = false
     elapsedSecsPlaying = 0
     lastTick = Date.now()
     consistentRandom = []
     missionSequence = [
-        { type: "prop", value: 71000 },
-        { type: "burn", value: 1500 },
-        { type: "prop", value: 60 * 60 * 24 },
+        // { type: "prop", value: 71000 },
+        // { type: "burn", value: 1500 },
+        { type: "prop", value: 60 * 60 * 8 },
     ]
-    lookAheadTime = 60 * 60 * 24
+    lookAheadTime = 60 * 60 * 8
+    gapTime = 60 * 10
     constructor(canvas, timeControl) {
         for (let i = 0; i < 1000; i++) {
             this.consistentRandom.push(Math.random())
@@ -79,24 +81,27 @@ export class Game {
             })
     }
     startBurn() {
+        if (this.playing) this.playPause()
+        const startTime = this.data["Sat.ElapsedSecs"][this.currentTimeIndex]
         const totalLength = this.missionSequence.reduce(
             (a, x) => (a += x.value),
             0,
         )
         const earliestAllowedTime = totalLength - this.lookAheadTime
+        if (startTime < earliestAllowedTime) {
+            return
+        }
         this.missionSequence.pop()
-        this.missionSequence.push({ type: "burn", value: 3000 })
+        this.missionSequence.push({
+            type: "prop",
+            value: startTime - earliestAllowedTime,
+        })
+        this.missionSequence.push({ type: "burn", value: 1500 })
+        this.missionSequence.push({ type: "prop", value: this.gapTime })
         this.missionSequence.push({ type: "prop", value: this.lookAheadTime })
-        const beforeBurnLastTimeIndex =
-            [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
-                (x) => x > earliestAllowedTime,
-            ) - 1
         this.updateData(() => {
             this.sliderPos = 0 // setting to 0 here so that this.elapsedSecsPlaying isn't set to 0 in playPause(). the actual value doesn't matter much here as long as it's not 1
-            this.currentTimeIndex = beforeBurnLastTimeIndex
-            if (!this.playing) {
-                this.playPause()
-            }
+            this.playPause()
         })
     }
     playPause() {
@@ -110,6 +115,19 @@ export class Game {
             } else {
                 this.elapsedSecsPlaying =
                     this.data["Sat.ElapsedSecs"][this.currentTimeIndex]
+            }
+            if (
+                this.currentTimeIndex <
+                [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
+                    (x) =>
+                        x >
+                        this.missionSequence
+                            .slice(0, -1)
+                            .reduce((a, x) => (a += x.value), 0),
+                ) -
+                    1
+            ) {
+                this.startedPlayBeforeNow = true
             }
         }
     }
@@ -158,7 +176,11 @@ export class Game {
                       .padStart(
                           2,
                           "0",
-                      )}:${(Math.floor(Math.abs(secsDifference) / 60) % 60).toString().padStart(2, "0")}:${(Math.abs(secsDifference) % 60).toString().padStart(2, "0")}`
+                      )}:${(Math.floor(Math.abs(secsDifference) / 60) % 60).toString().padStart(2, "0")}:${Math.floor(
+                      Math.abs(secsDifference) % 60,
+                  )
+                      .toString()
+                      .padStart(2, "0")}`
     }
     sliderUpdate(clientX) {
         if (this.sliderDragging) {
@@ -172,7 +194,14 @@ export class Game {
             const nowTime = this.missionSequence
                 .slice(0, -1)
                 .reduce((a, x) => (a += x.value), 0)
-            const nowPos = nowTime / totalSecs
+            const nowPos =
+                [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
+                    (x) =>
+                        x >
+                        this.missionSequence
+                            .slice(0, -1)
+                            .reduce((a, x) => (a += x.value), 0),
+                ) / this.data["Sat.ElapsedSecs"].length
             let pos = Math.max(
                 0,
                 Math.min((clientX - sliderBounds.left) / sliderBounds.width, 1),
@@ -235,6 +264,25 @@ export class Game {
                             this.data["Sat.ElapsedSecs"].length - 1
                         ],
                 )
+                if (
+                    this.startedPlayBeforeNow &&
+                    this.elapsedSecsPlaying >
+                        this.missionSequence
+                            .slice(0, -1)
+                            .reduce((a, x) => (a += x.value), 0)
+                ) {
+                    this.startedPlayBeforeNow = false
+                    this.playPause()
+                    this.moveSlider(
+                        [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
+                            (x) =>
+                                x >
+                                this.missionSequence
+                                    .slice(0, -1)
+                                    .reduce((a, x) => (a += x.value), 0),
+                        ) / this.data["Sat.ElapsedSecs"].length,
+                    )
+                }
             }
         }
     }
