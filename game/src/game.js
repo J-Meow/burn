@@ -88,7 +88,10 @@ export class Game {
             0,
         )
         const earliestAllowedTime = totalLength - this.lookAheadTime
-        if (startTime < earliestAllowedTime) {
+        if (
+            startTime < earliestAllowedTime ||
+            parseInt(document.getElementById("burnduration").value) < 1
+        ) {
             return
         }
         this.missionSequence.pop()
@@ -96,7 +99,10 @@ export class Game {
             type: "prop",
             value: startTime - earliestAllowedTime,
         })
-        this.missionSequence.push({ type: "burn", value: 1500 })
+        this.missionSequence.push({
+            type: "burn",
+            value: parseInt(document.getElementById("burnduration").value),
+        })
         this.missionSequence.push({ type: "prop", value: this.gapTime })
         this.missionSequence.push({ type: "prop", value: this.lookAheadTime })
         this.updateData(() => {
