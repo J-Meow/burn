@@ -20,6 +20,7 @@ export class Game {
     missionSequence = [
         // { type: "prop", value: 71000 },
         // { type: "burn", value: 1500 },
+        { type: "prop", value: 60 * 60 },
         { type: "prop", value: 60 * 60 * 8 },
     ]
     lookAheadTime = 60 * 60 * 8
@@ -47,7 +48,8 @@ export class Game {
             .getElementById("burnstart")
             .addEventListener("click", this.startBurn.bind(this))
         this.updateData(() => {
-            this.moveSlider(1)
+            this.moveSlider(0)
+            this.playPause()
             this.loading = false
             this.canvas.parentElement.classList.remove("loading")
         })
