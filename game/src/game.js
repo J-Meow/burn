@@ -19,9 +19,9 @@ export class Game {
     missionSequence = [
         { type: "prop", value: 71000 },
         { type: "burn", value: 1500 },
-        { type: "prop", value: 20000 },
+        { type: "prop", value: 60 * 60 * 24 },
     ]
-    lookAheadTime = 20000
+    lookAheadTime = 60 * 60 * 24
     constructor(canvas, timeControl) {
         for (let i = 0; i < 1000; i++) {
             this.consistentRandom.push(Math.random())
@@ -47,6 +47,7 @@ export class Game {
         this.updateData(() => {
             this.moveSlider(1)
             this.loading = false
+            this.canvas.parentElement.classList.remove("loading")
         })
     }
     updateData(callback) {
@@ -135,24 +136,51 @@ export class Game {
             [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
                 (x) => x > seconds,
             ) - 1
-        this.timeControl.querySelector("span").innerText = this.data[
-            "Sat.A1Gregorian"
-        ][this.currentTimeIndex].slice(0, -4)
+        const secsDifference =
+            Math.floor(this.data["Sat.ElapsedSecs"][this.currentTimeIndex]) -
+            this.missionSequence
+                .slice(0, -1)
+                .reduce((a, x) => (a += x.value), 0)
+        const nowIndex =
+            [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
+                (x) =>
+                    x >
+                    this.missionSequence
+                        .slice(0, -1)
+                        .reduce((a, x) => (a += x.value), 0),
+            ) - 1
+        this.timeControl.querySelector("span").innerText =
+            nowIndex == this.currentTimeIndex
+                ? "NOW"
+                : (secsDifference > 0 ? "+" : "-") +
+                  `${Math.floor(Math.abs(secsDifference) / 3600)
+                      .toString()
+                      .padStart(
+                          2,
+                          "0",
+                      )}:${(Math.floor(Math.abs(secsDifference) / 60) % 60).toString().padStart(2, "0")}:${(Math.abs(secsDifference) % 60).toString().padStart(2, "0")}`
     }
     sliderUpdate(clientX) {
         if (this.sliderDragging) {
             const sliderBounds = this.timeControl
                 .querySelector(".slider")
                 .getBoundingClientRect()
-            this.moveSlider(
-                Math.max(
-                    0,
-                    Math.min(
-                        (clientX - sliderBounds.left) / sliderBounds.width,
-                        1,
-                    ),
-                ),
+            const totalSecs = this.missionSequence.reduce(
+                (a, x) => (a += x.value),
+                0,
             )
+            const nowTime = this.missionSequence
+                .slice(0, -1)
+                .reduce((a, x) => (a += x.value), 0)
+            const nowPos = nowTime / totalSecs
+            let pos = Math.max(
+                0,
+                Math.min((clientX - sliderBounds.left) / sliderBounds.width, 1),
+            )
+            if (pos > nowPos - 0.005 && pos < nowPos + 0.005) {
+                pos = nowPos
+            }
+            this.moveSlider(pos)
         }
     }
     mouseMove(ev) {

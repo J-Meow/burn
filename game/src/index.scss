@@ -207,6 +207,13 @@ html {
 }
 
 #ingame {
+    &.loading {
+        #goal,
+        #burncontrol,
+        #timecontrol {
+            display: none;
+        }
+    }
     #goal {
         z-index: 1;
         position: fixed;
