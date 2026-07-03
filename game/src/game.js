@@ -9,6 +9,9 @@ export class Game {
         },
     }
     loading = true
+    loadProgress = 0.5
+    loadProgressShowing = 0
+    loadTransparent = false
     sliderDragging = false
     sliderPos = 0
     currentTimeIndex = 0
@@ -51,36 +54,45 @@ export class Game {
             this.moveSlider(0)
             this.playPause()
             this.loading = false
+            this.loadTransparent = true
             this.canvas.parentElement.classList.remove("loading")
         })
     }
     updateData(callback) {
-        fetch(
+        this.loadProgress = 0
+        this.loadProgressShowing = 0
+        const xhr = new XMLHttpRequest()
+        xhr.open(
+            "GET",
             import.meta.env.VITE_GMAT_API_URL +
                 "/calculate?script=apoapsis-lower&sequence=" +
                 encodeURIComponent(JSON.stringify(this.missionSequence)),
+            true,
         )
-            .then((response) => response.text())
-            .then((text) => {
-                const lines = text.split("\n")
-                const data = {}
-                const keys = lines[0].split(",")
-                keys.forEach((key) => {
-                    data[key] = []
-                })
-                lines.slice(1, -1).forEach((line) => {
-                    const values = line.split(",")
-                    for (let i = 0; i < values.length; i++) {
-                        data[keys[i]].push(
-                            keys[i] == "Sat.A1Gregorian"
-                                ? values[i]
-                                : parseFloat(values[i]),
-                        )
-                    }
-                })
-                this.data = data
-                callback()
+        xhr.onprogress = (ev) => {
+            this.loadProgress = ev.loaded / 10000
+        }
+        xhr.onload = () => {
+            const lines = xhr.responseText.split("\n")
+            const data = {}
+            const keys = lines[0].split(",")
+            keys.forEach((key) => {
+                data[key] = []
             })
+            lines.slice(1, -1).forEach((line) => {
+                const values = line.split(",")
+                for (let i = 0; i < values.length; i++) {
+                    data[keys[i]].push(
+                        keys[i] == "Sat.A1Gregorian"
+                            ? values[i]
+                            : parseFloat(values[i]),
+                    )
+                }
+            })
+            this.data = data
+            callback()
+        }
+        xhr.send()
     }
     startBurn() {
         if (this.playing) this.playPause()
@@ -107,9 +119,11 @@ export class Game {
         })
         this.missionSequence.push({ type: "prop", value: this.gapTime })
         this.missionSequence.push({ type: "prop", value: this.lookAheadTime })
+        this.loading = true
         this.updateData(() => {
             this.sliderPos = 0 // setting to 0 here so that this.elapsedSecsPlaying isn't set to 0 in playPause(). the actual value doesn't matter much here as long as it's not 1
             this.playPause()
+            this.loading = false
         })
     }
     playPause() {
@@ -255,6 +269,13 @@ export class Game {
         setTimeout(this.tick.bind(this), 1000 / 60)
         const delta = Date.now() - this.lastTick
         this.lastTick = Date.now()
+        if (this.loading)
+            this.loadProgressShowing +=
+                ((1 -
+                    Math.pow(1.3, -this.loadProgress) / 2 -
+                    this.loadProgressShowing) /
+                    200) *
+                delta
         if (this.playing) {
             this.elapsedSecsPlaying += delta
             if (
@@ -297,7 +318,7 @@ export class Game {
     draw() {
         requestAnimationFrame(this.draw.bind(this))
         this.ctx.clearRect(0, 0, this.width, this.height)
-        if (this.loading) {
+        const drawLoading = function drawLoading() {
             this.ctx.fillStyle = "#ffeecc"
             this.ctx.beginPath()
             this.ctx.ellipse(
@@ -378,6 +399,22 @@ export class Game {
                 Math.PI * 2,
             )
             this.ctx.fill()
+            this.ctx.fillRect(
+                this.width / 2 - 100,
+                this.height / 2 + 120,
+                200 * this.loadProgressShowing,
+                10,
+            )
+            this.ctx.fillStyle = "#ffeecc33"
+            this.ctx.fillRect(
+                this.width / 2 - 100 + 200 * this.loadProgressShowing,
+                this.height / 2 + 120,
+                200 - 200 * this.loadProgressShowing,
+                10,
+            )
+        }.bind(this)
+        if (this.loading && !this.loadTransparent) {
+            drawLoading()
             return
         }
         const p = function p(x, y, z) {
@@ -646,5 +683,10 @@ export class Game {
             .forEach((item) => {
                 item.func()
             })
+        if (this.loading) {
+            this.ctx.fillStyle = "#0007"
+            this.ctx.fillRect(0, 0, this.width, this.height)
+            drawLoading()
+        }
     }
 }
