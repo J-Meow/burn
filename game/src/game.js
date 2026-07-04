@@ -14,10 +14,10 @@ export class Game {
     loadTransparent = false
     sliderDragging = false
     sliderPos = 0
-    currentTimeIndex = 0
+    currentSeconds = 0
+    totalSeconds
     playing = false
     startedPlayBeforeNow = false
-    elapsedSecsPlaying = 0
     lastTick = Date.now()
     consistentRandom = []
     missionSequence = [
@@ -59,6 +59,10 @@ export class Game {
         })
     }
     updateData(callback) {
+        this.totalSeconds = this.missionSequence.reduce(
+            (a, x) => (a += x.value),
+            0,
+        )
         this.loadProgress = 0
         this.loadProgressShowing = 0
         const xhr = new XMLHttpRequest()
@@ -96,7 +100,7 @@ export class Game {
     }
     startBurn() {
         if (this.playing) this.playPause()
-        const startTime = this.data["Sat.ElapsedSecs"][this.currentTimeIndex]
+        const startTime = this.currentSeconds
         const totalLength = this.missionSequence.reduce(
             (a, x) => (a += x.value),
             0,
@@ -109,10 +113,12 @@ export class Game {
             return
         }
         this.missionSequence.pop()
-        this.missionSequence.push({
-            type: "prop",
-            value: startTime - earliestAllowedTime,
-        })
+        if (startTime - earliestAllowedTime) {
+            this.missionSequence.push({
+                type: "prop",
+                value: startTime - earliestAllowedTime,
+            })
+        }
         this.missionSequence.push({
             type: "burn",
             value: parseInt(document.getElementById("burnduration").value),
@@ -133,21 +139,13 @@ export class Game {
             .setAttribute("data-state", this.playing ? "pause" : "play")
         if (this.playing) {
             if (this.sliderPos == 1) {
-                this.elapsedSecsPlaying = 0
-            } else {
-                this.elapsedSecsPlaying =
-                    this.data["Sat.ElapsedSecs"][this.currentTimeIndex]
+                this.currentSeconds = 0
             }
             if (
-                this.currentTimeIndex <
-                [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
-                    (x) =>
-                        x >
-                        this.missionSequence
-                            .slice(0, -1)
-                            .reduce((a, x) => (a += x.value), 0),
-                ) -
-                    1
+                this.currentSeconds <
+                this.missionSequence
+                    .slice(0, -1)
+                    .reduce((a, x) => (a += x.value), 0)
             ) {
                 this.startedPlayBeforeNow = true
             }
@@ -167,30 +165,15 @@ export class Game {
         this.timeControl
             .querySelector(".slider")
             .style.setProperty("--pos", this.sliderPos * 100 + "%")
-        const seconds =
-            this.sliderPos *
-            this.data["Sat.ElapsedSecs"][
-                this.data["Sat.ElapsedSecs"].length - 1
-            ]
-        this.currentTimeIndex =
-            [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
-                (x) => x > seconds,
-            ) - 1
+        const seconds = this.sliderPos * this.totalSeconds
+        this.currentSeconds = seconds
         const secsDifference =
-            Math.floor(this.data["Sat.ElapsedSecs"][this.currentTimeIndex]) -
+            seconds -
             this.missionSequence
                 .slice(0, -1)
                 .reduce((a, x) => (a += x.value), 0)
-        const nowIndex =
-            [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
-                (x) =>
-                    x >
-                    this.missionSequence
-                        .slice(0, -1)
-                        .reduce((a, x) => (a += x.value), 0),
-            ) - 1
         this.timeControl.querySelector("span").innerText =
-            nowIndex == this.currentTimeIndex
+            Math.abs(secsDifference) < 1
                 ? "NOW"
                 : (secsDifference > 0 ? "+" : "-") +
                   `${Math.floor(Math.abs(secsDifference) / 3600)
@@ -216,14 +199,7 @@ export class Game {
             const nowTime = this.missionSequence
                 .slice(0, -1)
                 .reduce((a, x) => (a += x.value), 0)
-            const nowPos =
-                [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
-                    (x) =>
-                        x >
-                        this.missionSequence
-                            .slice(0, -1)
-                            .reduce((a, x) => (a += x.value), 0),
-                ) / this.data["Sat.ElapsedSecs"].length
+            const nowPos = nowTime / this.totalSeconds
             let pos = Math.max(
                 0,
                 Math.min((clientX - sliderBounds.left) / sliderBounds.width, 1),
@@ -277,25 +253,15 @@ export class Game {
                     200) *
                 delta
         if (this.playing) {
-            this.elapsedSecsPlaying += delta
-            if (
-                this.elapsedSecsPlaying >=
-                this.data["Sat.ElapsedSecs"][
-                    this.data["Sat.ElapsedSecs"].length - 1
-                ]
-            ) {
+            this.currentSeconds += delta
+            if (this.currentSeconds >= this.totalSeconds) {
                 this.moveSlider(1)
                 this.playPause()
             } else {
-                this.moveSlider(
-                    this.elapsedSecsPlaying /
-                        this.data["Sat.ElapsedSecs"][
-                            this.data["Sat.ElapsedSecs"].length - 1
-                        ],
-                )
+                this.moveSlider(this.currentSeconds / this.totalSeconds)
                 if (
                     this.startedPlayBeforeNow &&
-                    this.elapsedSecsPlaying >
+                    this.currentSeconds >
                         this.missionSequence
                             .slice(0, -1)
                             .reduce((a, x) => (a += x.value), 0)
@@ -303,13 +269,10 @@ export class Game {
                     this.startedPlayBeforeNow = false
                     this.playPause()
                     this.moveSlider(
-                        [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
-                            (x) =>
-                                x >
-                                this.missionSequence
-                                    .slice(0, -1)
-                                    .reduce((a, x) => (a += x.value), 0),
-                        ) / this.data["Sat.ElapsedSecs"].length,
+                        this.missionSequence
+                            .slice(0, -1)
+                            .reduce((a, x) => (a += x.value), 0) /
+                            this.totalSeconds,
                     )
                 }
             }
@@ -524,17 +487,15 @@ export class Game {
             })
         }.bind(this)
         sphere(0, 0, 0, 6378) // 6378 km is radius of earth according to wikipedia idk
-        for (
-            let i =
-                [...this.data["Sat.ElapsedSecs"], Infinity].findIndex(
-                    (x) =>
-                        x >
-                        this.data["Sat.ElapsedSecs"][this.currentTimeIndex] -
-                            6000,
-                ) - 1;
-            i < this.currentTimeIndex;
-            i++
-        ) {
+        const currentTimeIndex =
+            this.data["Sat.ElapsedSecs"]
+                .concat([Infinity])
+                .findIndex((x) => x > this.currentSeconds) - 1
+        const startTimeIndex =
+            this.data["Sat.ElapsedSecs"]
+                .concat([Infinity])
+                .findIndex((x) => x > this.currentSeconds - 6000) - 1
+        for (let i = startTimeIndex; i < currentTimeIndex; i++) {
             drawList.push({
                 z: this.data["Sat.EarthMJ2000Eq.Z"][i],
                 func: () => {
@@ -544,9 +505,7 @@ export class Game {
                             (Math.max(
                                 0,
                                 6000 -
-                                    (this.data["Sat.ElapsedSecs"][
-                                        this.currentTimeIndex
-                                    ] -
+                                    (this.currentSeconds -
                                         this.data["Sat.ElapsedSecs"][i]),
                             ) /
                                 6000) *
@@ -575,14 +534,14 @@ export class Game {
             })
         }
         drawList.push({
-            z: this.data["Sat.EarthMJ2000Eq.Z"][this.currentTimeIndex],
+            z: this.data["Sat.EarthMJ2000Eq.Z"][currentTimeIndex],
             func: () => {
                 this.ctx.fillStyle = "#ffeecc"
                 this.ctx.beginPath()
                 const point = p(
-                    this.data["Sat.EarthMJ2000Eq.X"][this.currentTimeIndex],
-                    this.data["Sat.EarthMJ2000Eq.Y"][this.currentTimeIndex],
-                    this.data["Sat.EarthMJ2000Eq.Z"][this.currentTimeIndex],
+                    this.data["Sat.EarthMJ2000Eq.X"][currentTimeIndex],
+                    this.data["Sat.EarthMJ2000Eq.Y"][currentTimeIndex],
+                    this.data["Sat.EarthMJ2000Eq.Z"][currentTimeIndex],
                 )
                 const x = point[0],
                     y = point[1]
@@ -617,7 +576,7 @@ export class Game {
         })
         for (
             let i = 0;
-            i < this.data["Sat.ElapsedSecs"][this.currentTimeIndex];
+            i < this.data["Sat.ElapsedSecs"][currentTimeIndex];
             i++
         ) {
             particleTick++
