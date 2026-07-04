@@ -28,6 +28,7 @@ export class Game {
     ]
     lookAheadTime = 60 * 60 * 8
     gapTime = 60 * 10
+    explodeTime = Infinity
     constructor(canvas, timeControl) {
         for (let i = 0; i < 1000; i++) {
             this.consistentRandom.push(Math.random())
@@ -94,6 +95,13 @@ export class Game {
                 }
             })
             this.data = data
+            const crashTime =
+                this.data["Sat.ElapsedSecs"][
+                    this.data["Sat.Altitude"].findIndex((x) => x <= 0)
+                ]
+            if (crashTime) {
+                this.explodeTime = crashTime
+            }
             callback()
         }
         xhr.send()
@@ -148,6 +156,8 @@ export class Game {
                     .reduce((a, x) => (a += x.value), 0)
             ) {
                 this.startedPlayBeforeNow = true
+            } else {
+                this.startedPlayBeforeNow = false
             }
         }
     }
@@ -490,7 +500,9 @@ export class Game {
         const currentTimeIndex =
             this.data["Sat.ElapsedSecs"]
                 .concat([Infinity])
-                .findIndex((x) => x > this.currentSeconds) - 1
+                .findIndex(
+                    (x) => x > this.currentSeconds || x > this.explodeTime,
+                ) - 1
         const startTimeIndex =
             this.data["Sat.ElapsedSecs"]
                 .concat([Infinity])
@@ -533,25 +545,27 @@ export class Game {
                 },
             })
         }
-        drawList.push({
-            z: this.data["Sat.EarthMJ2000Eq.Z"][currentTimeIndex],
-            func: () => {
-                this.ctx.fillStyle = "#ffeecc"
-                this.ctx.beginPath()
-                const point = p(
-                    this.data["Sat.EarthMJ2000Eq.X"][currentTimeIndex],
-                    this.data["Sat.EarthMJ2000Eq.Y"][currentTimeIndex],
-                    this.data["Sat.EarthMJ2000Eq.Z"][currentTimeIndex],
-                )
-                const x = point[0],
-                    y = point[1]
-                this.ctx.moveTo(x - 6, y)
-                this.ctx.lineTo(x, y - 6)
-                this.ctx.lineTo(x + 6, y)
-                this.ctx.lineTo(x, y + 6)
-                this.ctx.fill()
-            },
-        })
+        if (this.currentSeconds < this.explodeTime) {
+            drawList.push({
+                z: this.data["Sat.EarthMJ2000Eq.Z"][currentTimeIndex],
+                func: () => {
+                    this.ctx.fillStyle = "#ffeecc"
+                    this.ctx.beginPath()
+                    const point = p(
+                        this.data["Sat.EarthMJ2000Eq.X"][currentTimeIndex],
+                        this.data["Sat.EarthMJ2000Eq.Y"][currentTimeIndex],
+                        this.data["Sat.EarthMJ2000Eq.Z"][currentTimeIndex],
+                    )
+                    const x = point[0],
+                        y = point[1]
+                    this.ctx.moveTo(x - 6, y)
+                    this.ctx.lineTo(x, y - 6)
+                    this.ctx.lineTo(x + 6, y)
+                    this.ctx.lineTo(x, y + 6)
+                    this.ctx.fill()
+                },
+            })
+        }
         let randomNumId = 0
         const getRandom = function getRandom() {
             if (this.consistentRandom.length == randomNumId) {
@@ -574,16 +588,30 @@ export class Game {
                 burnTimes.push([elapsedSecs, (elapsedSecs += item.value)])
             }
         })
-        for (
-            let i = 0;
-            i < this.data["Sat.ElapsedSecs"][currentTimeIndex];
-            i++
-        ) {
+        let explosionDone = false
+        for (let i = 0; i < this.currentSeconds; i++) {
             particleTick++
             while (this.data["Sat.ElapsedSecs"][timeIndex] < i) {
                 timeIndex++
             }
+            if (!explosionDone && i > this.explodeTime) {
+                explosionDone = true
+                for (let j = 0; j < 40; j++) {
+                    particles.push({
+                        x: this.data["Sat.EarthMJ2000Eq.X"][timeIndex],
+                        y: this.data["Sat.EarthMJ2000Eq.Y"][timeIndex],
+                        z: this.data["Sat.EarthMJ2000Eq.Z"][timeIndex],
+                        vx: (getRandom() - 0.5) * 5,
+                        vy: (getRandom() - 0.5) * 5,
+                        vz: (getRandom() - 0.5) * 5,
+                        size: getRandom() * 2 + 2,
+                        lifeLeft: 3000,
+                        fullBrightLifeLeft: 8000,
+                    })
+                }
+            }
             if (
+                !explosionDone &&
                 burnTimes.filter((x) => x[0] < i && i < x[1]).length &&
                 particleTick >= 10
             ) {
@@ -603,6 +631,7 @@ export class Game {
                         (getRandom() - 0.5) * 6,
                     size: getRandom() * 2 + 2,
                     lifeLeft: 300,
+                    fullBrightLifeLeft: 800,
                 })
             }
             particles.forEach((particle) => {
@@ -618,7 +647,8 @@ export class Game {
                 z: particle.z,
                 func: () => {
                     this.ctx.fillStyle = "#ffeecc"
-                    this.ctx.globalAlpha = particle.lifeLeft / 800
+                    this.ctx.globalAlpha =
+                        particle.lifeLeft / particle.fullBrightLifeLeft
                     this.ctx.beginPath()
                     const point = p(particle.x, particle.y, particle.z)
                     const x = point[0],
