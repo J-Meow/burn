@@ -29,6 +29,7 @@ export class Game {
     lookAheadTime = 60 * 60 * 8
     gapTime = 60 * 10
     explodeTime = Infinity
+    doomViewEndTime = -1
     constructor(canvas, timeControl) {
         for (let i = 0; i < 1000; i++) {
             this.consistentRandom.push(Math.random())
@@ -58,6 +59,10 @@ export class Game {
             this.loadTransparent = true
             this.canvas.parentElement.classList.remove("loading")
         })
+    }
+    gameEnd() {
+        document.getElementById("ingame").classList.remove("show")
+        document.getElementById("end-screen").classList.add("show")
     }
     updateData(callback) {
         this.totalSeconds = this.missionSequence.reduce(
@@ -101,6 +106,18 @@ export class Game {
                 ]
             if (crashTime) {
                 this.explodeTime = crashTime
+                if (crashTime < this.totalSeconds - this.lookAheadTime) {
+                    this.doomViewEndTime = crashTime + 60 * 40
+                }
+            }
+            const tooFarTime =
+                this.data["Sat.ElapsedSecs"][
+                    this.data["Sat.Altitude"].findIndex((x) => x > 50000)
+                ]
+            if (tooFarTime) {
+                if (tooFarTime < this.totalSeconds - this.lookAheadTime) {
+                    this.doomViewEndTime = tooFarTime
+                }
             }
             callback()
         }
@@ -143,7 +160,10 @@ export class Game {
             this.loading = false
         })
     }
-    playPause() {
+    playPause(ev = null) {
+        if (ev && this.doomViewEndTime >= 0) {
+            return
+        }
         this.playing = !this.playing
         this.timeControl
             .querySelector(".playpause")
@@ -165,6 +185,9 @@ export class Game {
         }
     }
     sliderStart(ev) {
+        if (this.doomViewEndTime >= 0) {
+            return
+        }
         this.sliderDragging = true
         if (this.playing) this.playPause()
         this.sliderUpdate(ev.clientX)
@@ -272,6 +295,13 @@ export class Game {
                 this.playPause()
             } else {
                 this.moveSlider(this.currentSeconds / this.totalSeconds)
+                if (
+                    this.doomViewEndTime >= 0 &&
+                    this.currentSeconds > this.doomViewEndTime
+                ) {
+                    this.playing = false
+                    this.gameEnd()
+                }
                 if (
                     this.startedPlayBeforeNow &&
                     this.currentSeconds >
