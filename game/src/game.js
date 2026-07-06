@@ -680,6 +680,18 @@ export class Game {
                 },
             })
         })
+        let furthestDist = 0
+        for (let i = 0; i < currentTimeIndex; i++) {
+            furthestDist = Math.max(
+                furthestDist,
+                Math.sqrt(
+                    Math.pow(this.data["Sat.EarthMJ2000Eq.X"][i], 2) +
+                        Math.pow(this.data["Sat.EarthMJ2000Eq.Y"][i], 2) +
+                        Math.pow(this.data["Sat.EarthMJ2000Eq.Z"][i], 2),
+                ),
+            )
+        }
+        this.camera.translate.z = -(Math.max(furthestDist - 20000, 0) + 12000)
         drawList
             .sort((a, b) => b.z - a.z)
             .forEach((item) => {
