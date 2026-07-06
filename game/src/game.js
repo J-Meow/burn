@@ -116,7 +116,9 @@ export class Game {
         const earliestAllowedTime = totalLength - this.lookAheadTime
         if (
             startTime < earliestAllowedTime ||
-            parseInt(document.getElementById("burnduration").value) < 1
+            parseInt(document.getElementById("burnduration").value) < 1 ||
+            (!document.getElementById("burndirfront").checked &&
+                !document.getElementById("burndirback").checked)
         ) {
             return
         }
@@ -130,6 +132,7 @@ export class Game {
         this.missionSequence.push({
             type: "burn",
             value: parseInt(document.getElementById("burnduration").value),
+            front: document.getElementById("burndirfront").checked,
         })
         this.missionSequence.push({ type: "prop", value: this.gapTime })
         this.missionSequence.push({ type: "prop", value: this.lookAheadTime })
@@ -585,7 +588,11 @@ export class Game {
                 elapsedSecs += item.value
             }
             if (item.type == "burn") {
-                burnTimes.push([elapsedSecs, (elapsedSecs += item.value)])
+                burnTimes.push([
+                    elapsedSecs,
+                    (elapsedSecs += item.value),
+                    item.front,
+                ])
             }
         })
         let explosionDone = false
@@ -615,19 +622,25 @@ export class Game {
                 burnTimes.filter((x) => x[0] < i && i < x[1]).length &&
                 particleTick >= 10
             ) {
+                const burnData = burnTimes.filter(
+                    (x) => x[0] < i && i < x[1],
+                )[0]
                 particleTick = 0
                 particles.push({
                     x: this.data["Sat.EarthMJ2000Eq.X"][timeIndex],
                     y: this.data["Sat.EarthMJ2000Eq.Y"][timeIndex],
                     z: this.data["Sat.EarthMJ2000Eq.Z"][timeIndex],
                     vx:
-                        this.data["Sat.EarthMJ2000Eq.VX"][timeIndex] * 2 +
+                        this.data["Sat.EarthMJ2000Eq.VX"][timeIndex] *
+                            (burnData[2] ? 2 : -1) +
                         (getRandom() - 0.5) * 6,
                     vy:
-                        this.data["Sat.EarthMJ2000Eq.VY"][timeIndex] * 2 +
+                        this.data["Sat.EarthMJ2000Eq.VY"][timeIndex] *
+                            (burnData[2] ? 2 : -1) +
                         (getRandom() - 0.5) * 6,
                     vz:
-                        this.data["Sat.EarthMJ2000Eq.VZ"][timeIndex] * 2 +
+                        this.data["Sat.EarthMJ2000Eq.VZ"][timeIndex] *
+                            (burnData[2] ? 2 : -1) +
                         (getRandom() - 0.5) * 6,
                     size: getRandom() * 2 + 2,
                     lifeLeft: 300,

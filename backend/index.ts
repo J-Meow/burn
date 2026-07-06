@@ -8,37 +8,40 @@ const scripts = {
     "apoapsis-lower": {
         path: "./scripts/apoapsis-lower.script",
         sequenceActions: {
-            prop: (seconds) => {
-                if (isNaN(seconds)) {
+            prop: ({ value }) => {
+                if (isNaN(value)) {
                     return false
                 }
-                if (typeof seconds != "number") {
+                if (typeof value != "number") {
                     return false
                 }
-                if (seconds <= 0) {
+                if (value <= 0) {
                     return false
                 }
-                if (seconds > 100000) {
+                if (value > 100000) {
                     return false
                 }
-                return `Propagate DefaultProp(Sat) {Sat.ElapsedSecs = ${seconds}};\n`
+                return `Propagate DefaultProp(Sat) {Sat.ElapsedSecs = ${value}};\n`
             },
-            burn: (seconds) => {
-                if (isNaN(seconds)) {
+            burn: ({ value, front }) => {
+                if (typeof front != "boolean") {
                     return false
                 }
-                if (typeof seconds != "number") {
+                if (isNaN(value)) {
                     return false
                 }
-                if (seconds <= 0) {
+                if (typeof value != "number") {
                     return false
                 }
-                if (seconds > 100000) {
+                if (value <= 0) {
                     return false
                 }
-                return `BeginFiniteBurn FiniteBurn1(Sat)
-Propagate DefaultProp(Sat) {Sat.ElapsedSecs = ${seconds}};
-EndFiniteBurn FiniteBurn1(Sat)\n`
+                if (value > 100000) {
+                    return false
+                }
+                return `BeginFiniteBurn FiniteBurn${front ? "Front" : "Back"}(Sat)
+Propagate DefaultProp(Sat) {Sat.ElapsedSecs = ${value}};
+EndFiniteBurn FiniteBurn${front ? "Front" : "Back"}(Sat)\n`
             },
         },
     },
@@ -80,9 +83,8 @@ Bun.serve({
                                 action.type,
                             )
                         ) {
-                            const newContent = script.sequenceActions[
-                                action.type
-                            ](action.value)
+                            const newContent =
+                                script.sequenceActions[action.type](action)
                             if (newContent) {
                                 extraScriptContent += newContent
                             } else {

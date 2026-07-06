@@ -251,6 +251,20 @@ html {
             background: none;
             border: 1px solid #ffeecc;
         }
+        input[type="radio"] {
+            appearance: none;
+            display: none;
+        }
+        input[type="radio"]:checked + label {
+            opacity: 1;
+        }
+        input[type="radio"] + label {
+            opacity: 0.6;
+            svg {
+                width: 4rem;
+                height: 4rem;
+            }
+        }
         button {
             cursor: pointer;
         }
