@@ -70,6 +70,21 @@ export class Game {
             ? "Mission Complete"
             : "Mission Failed"
         document.getElementById("end-info").innerText = this.endInfo
+        document
+            .getElementById("end-screen--try-again")
+            .addEventListener("click", () => {
+                location.reload()
+                // i will make this better later
+            })
+        document
+            .getElementById("end-screen--replay")
+            .addEventListener("click", () => {
+                document.getElementById("end-screen").classList.remove("show")
+                document.getElementById("ingame").classList.add("show")
+                this.doomViewEndTime = -1
+                this.currentSeconds = 0
+                if (!this.playing) this.playPause()
+            })
     }
     updateData(callback) {
         this.totalSeconds = this.missionSequence.reduce(
