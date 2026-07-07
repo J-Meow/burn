@@ -32,6 +32,7 @@ export class Game {
     doomViewEndTime = -1
     success = false
     endInfo = ""
+    remainingBurns = 2
     constructor(canvas, timeControl) {
         for (let i = 0; i < 1000; i++) {
             this.consistentRandom.push(Math.random())
@@ -145,7 +146,8 @@ export class Game {
             startTime < earliestAllowedTime ||
             parseInt(document.getElementById("burnduration").value) < 1 ||
             (!document.getElementById("burndirfront").checked &&
-                !document.getElementById("burndirback").checked)
+                !document.getElementById("burndirback").checked) ||
+            this.remainingBurns <= 0
         ) {
             return
         }
@@ -164,6 +166,9 @@ export class Game {
         this.missionSequence.push({ type: "prop", value: this.gapTime })
         this.missionSequence.push({ type: "prop", value: this.lookAheadTime })
         this.loading = true
+        this.remainingBurns--
+        document.getElementById("remainingburns").innerText =
+            `Remaining burns: ${this.remainingBurns}`
         this.updateData(() => {
             this.sliderPos = 0 // setting to 0 here so that this.elapsedSecsPlaying isn't set to 0 in playPause(). the actual value doesn't matter much here as long as it's not 1
             this.playPause()
