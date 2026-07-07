@@ -178,6 +178,11 @@ html {
         margin: 0;
         font-family: InstrumentSerif, serif;
     }
+    #end-info {
+        margin: 0;
+        margin-top: -1rem;
+        opacity: 0.6;
+    }
     button {
         cursor: pointer;
         background: none;

@@ -30,6 +30,8 @@ export class Game {
     gapTime = 60 * 10
     explodeTime = Infinity
     doomViewEndTime = -1
+    success = false
+    endInfo = ""
     constructor(canvas, timeControl) {
         for (let i = 0; i < 1000; i++) {
             this.consistentRandom.push(Math.random())
@@ -63,6 +65,10 @@ export class Game {
     gameEnd() {
         document.getElementById("ingame").classList.remove("show")
         document.getElementById("end-screen").classList.add("show")
+        document.querySelector("#end-screen h1").innerText = this.success
+            ? "Mission Complete"
+            : "Mission Failed"
+        document.getElementById("end-info").innerText = this.endInfo
     }
     updateData(callback) {
         this.totalSeconds = this.missionSequence.reduce(
@@ -104,19 +110,23 @@ export class Game {
                 this.data["Sat.ElapsedSecs"][
                     this.data["Sat.Altitude"].findIndex((x) => x <= 0)
                 ]
-            if (crashTime) {
-                this.explodeTime = crashTime
-                if (crashTime < this.totalSeconds - this.lookAheadTime) {
-                    this.doomViewEndTime = crashTime + 60 * 40
-                }
-            }
             const tooFarTime =
                 this.data["Sat.ElapsedSecs"][
                     this.data["Sat.Altitude"].findIndex((x) => x > 50000)
                 ]
-            if (tooFarTime) {
+            if (crashTime && (!tooFarTime || crashTime < tooFarTime)) {
+                this.explodeTime = crashTime
+                if (crashTime < this.totalSeconds - this.lookAheadTime) {
+                    this.doomViewEndTime = crashTime + 60 * 20
+                    this.success = false
+                    this.endInfo = "Crashed into Earth"
+                }
+            }
+            if (tooFarTime && (!crashTime || tooFarTime < crashTime)) {
                 if (tooFarTime < this.totalSeconds - this.lookAheadTime) {
                     this.doomViewEndTime = tooFarTime
+                    this.success = false
+                    this.endInfo = "Drifted into space"
                 }
             }
             callback()
@@ -299,7 +309,7 @@ export class Game {
                     this.doomViewEndTime >= 0 &&
                     this.currentSeconds > this.doomViewEndTime
                 ) {
-                    this.playing = false
+                    setTimeout(() => (this.playing = false), 500)
                     this.gameEnd()
                 }
                 if (
