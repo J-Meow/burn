@@ -8,6 +8,7 @@ const scripts = {
     "apoapsis-lower": {
         path: "./scripts/apoapsis-lower.script",
         sequenceActions: {
+            startReport: () => `Toggle ReportFile1 On\n`,
             prop: ({ value }) => {
                 if (isNaN(value)) {
                     return false

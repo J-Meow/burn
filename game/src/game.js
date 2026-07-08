@@ -23,6 +23,7 @@ export class Game {
     missionSequence = [
         // { type: "prop", value: 71000 },
         // { type: "burn", value: 1500 },
+        { type: "startReport", value: 0 },
         { type: "prop", value: 60 * 60 },
         { type: "prop", value: 60 * 60 * 8 },
     ]
@@ -86,7 +87,7 @@ export class Game {
                 if (!this.playing) this.playPause()
             })
     }
-    updateData(callback) {
+    updateData(callback, reportStartTime = 0) {
         this.totalSeconds = this.missionSequence.reduce(
             (a, x) => (a += x.value),
             0,
@@ -121,14 +122,26 @@ export class Game {
                     )
                 }
             })
-            this.data = data
+            if (this.data) {
+                const reportStartIndex = this.data["Sat.ElapsedSecs"].findIndex(
+                    (x) => x >= reportStartTime,
+                )
+                for (let i = 0; i < Object.keys(this.data).length; i++) {
+                    const key = Object.keys(this.data)[i]
+                    this.data[key] = this.data[key]
+                        .slice(0, reportStartIndex)
+                        .concat(data[key])
+                }
+            } else {
+                this.data = data
+            }
             const crashTime =
                 this.data["Sat.ElapsedSecs"][
                     this.data["Sat.Altitude"].findIndex((x) => x <= 0)
                 ]
             const tooFarTime =
                 this.data["Sat.ElapsedSecs"][
-                    this.data["Sat.Altitude"].findIndex((x) => x > 50000)
+                    this.data["Sat.Altitude"].findIndex((x) => x > 20000)
                 ]
             if (crashTime && (!tooFarTime || crashTime < tooFarTime)) {
                 this.explodeTime = crashTime
@@ -166,7 +179,12 @@ export class Game {
         ) {
             return
         }
+        this.missionSequence.splice(
+            this.missionSequence.findIndex((x) => x.type == "startReport"),
+            1,
+        )
         this.missionSequence.pop()
+        this.missionSequence.push({ type: "startReport", value: 0 })
         if (startTime - earliestAllowedTime) {
             this.missionSequence.push({
                 type: "prop",
@@ -188,7 +206,7 @@ export class Game {
             this.sliderPos = 0 // setting to 0 here so that this.elapsedSecsPlaying isn't set to 0 in playPause(). the actual value doesn't matter much here as long as it's not 1
             this.playPause()
             this.loading = false
-        })
+        }, earliestAllowedTime)
     }
     playPause(ev = null) {
         if (ev && this.doomViewEndTime >= 0) {
@@ -314,9 +332,9 @@ export class Game {
         if (this.loading)
             this.loadProgressShowing +=
                 ((1 -
-                    Math.pow(1.3, -this.loadProgress) / 2 -
+                    Math.pow(1.1, -this.loadProgress) / 2 -
                     this.loadProgressShowing) /
-                    200) *
+                    500) *
                 delta
         if (this.playing) {
             this.currentSeconds += delta

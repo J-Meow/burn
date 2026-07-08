@@ -100,6 +100,7 @@ ReportFile1.Delimiter = ',';
 ReportFile1.ColumnWidth = 23;
 ReportFile1.WriteReport = true;
 ReportFile1.AppendToExistingFile = false;
+ReportFile1.WriteReport = false;
 
 Create ChemicalTank FuelTank1
 
