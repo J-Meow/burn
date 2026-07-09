@@ -30,7 +30,7 @@ export class Game {
     lookAheadTime = 60 * 60 * 8
     gapTime = 60 * 10
     explodeTime = Infinity
-    doomViewEndTime = -1
+    unpausableEndTime = -1
     success = false
     endInfo = ""
     remainingBurns = 2
@@ -82,7 +82,7 @@ export class Game {
             .addEventListener("click", () => {
                 document.getElementById("end-screen").classList.remove("show")
                 document.getElementById("ingame").classList.add("show")
-                this.doomViewEndTime = -1
+                this.unpausableEndTime = -1
                 this.currentSeconds = 0
                 if (!this.playing) this.playPause()
             })
@@ -141,19 +141,19 @@ export class Game {
                 ]
             const tooFarTime =
                 this.data["Sat.ElapsedSecs"][
-                    this.data["Sat.Altitude"].findIndex((x) => x > 20000)
+                    this.data["Sat.ECC"].findIndex((x) => x >= 1)
                 ]
             if (crashTime && (!tooFarTime || crashTime < tooFarTime)) {
                 this.explodeTime = crashTime
                 if (crashTime < this.totalSeconds - this.lookAheadTime) {
-                    this.doomViewEndTime = crashTime + 60 * 20
+                    this.unpausableEndTime = crashTime + 60 * 20
                     this.success = false
                     this.endInfo = "Crashed into Earth"
                 }
             }
             if (tooFarTime && (!crashTime || tooFarTime < crashTime)) {
                 if (tooFarTime < this.totalSeconds - this.lookAheadTime) {
-                    this.doomViewEndTime = tooFarTime
+                    this.unpausableEndTime = tooFarTime
                     this.success = false
                     this.endInfo = "Drifted into space"
                 }
@@ -203,13 +203,28 @@ export class Game {
         document.getElementById("remainingburns").innerText =
             `Remaining burns: ${this.remainingBurns}`
         this.updateData(() => {
-            this.sliderPos = 0 // setting to 0 here so that this.elapsedSecsPlaying isn't set to 0 in playPause(). the actual value doesn't matter much here as long as it's not 1
+            if (this.unpausableEndTime < 0 && this.remainingBurns == 0) {
+                this.unpausableEndTime =
+                    this.totalSeconds - this.lookAheadTime + 60 * 60
+                const eccentricity =
+                    this.data["Sat.ECC"][this.data["Sat.ECC"].length - 1]
+                const score = Math.round(
+                    -(eccentricity - 0.442) * (1000 / 0.442),
+                )
+                this.success = score > 10
+                this.endInfo = this.success
+                    ? `Score: ${score}`
+                    : score >= 0
+                      ? "Orbit did not change enough"
+                      : "Orbit became less circular"
+            }
+            this.sliderPos = 0
             this.playPause()
             this.loading = false
         }, earliestAllowedTime)
     }
     playPause(ev = null) {
-        if (ev && this.doomViewEndTime >= 0) {
+        if (ev && this.unpausableEndTime >= 0) {
             return
         }
         this.playing = !this.playing
@@ -233,7 +248,7 @@ export class Game {
         }
     }
     sliderStart(ev) {
-        if (this.doomViewEndTime >= 0) {
+        if (this.unpausableEndTime >= 0) {
             return
         }
         this.sliderDragging = true
@@ -344,8 +359,8 @@ export class Game {
             } else {
                 this.moveSlider(this.currentSeconds / this.totalSeconds)
                 if (
-                    this.doomViewEndTime >= 0 &&
-                    this.currentSeconds > this.doomViewEndTime
+                    this.unpausableEndTime >= 0 &&
+                    this.currentSeconds > this.unpausableEndTime
                 ) {
                     setTimeout(() => (this.playing = false), 500)
                     this.gameEnd()
@@ -355,7 +370,8 @@ export class Game {
                     this.currentSeconds >
                         this.missionSequence
                             .slice(0, -1)
-                            .reduce((a, x) => (a += x.value), 0)
+                            .reduce((a, x) => (a += x.value), 0) &&
+                    this.unpausableEndTime < 0
                 ) {
                     this.startedPlayBeforeNow = false
                     this.playPause()
