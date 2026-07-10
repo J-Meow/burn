@@ -54,6 +54,17 @@ export class Game {
         this.draw()
         addEventListener("mousemove", this.mouseMove.bind(this))
         document
+            .getElementById("burnduration")
+            .addEventListener("input", (ev) => {
+                ev.target.style.setProperty(
+                    "--slider-value",
+                    parseInt(ev.target.value) / parseInt(ev.target.max),
+                )
+                document.querySelector('[for="burnduration"]').innerText =
+                    ev.target.value + "s"
+            })
+        document.getElementById("burnduration").value = 1000
+        document
             .getElementById("burnstart")
             .addEventListener("click", this.startBurn.bind(this))
         this.updateData(() => {
