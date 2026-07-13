@@ -37,6 +37,7 @@ export class Game {
     burnDirTick = 1000
     burnPreviewDir = "front"
     burnPreviewMoving = false
+    isFirstDraw = true
     constructor(canvas, timeControl) {
         this.canvas = canvas
         this.timeControl = timeControl
@@ -436,6 +437,9 @@ export class Game {
     }
     draw() {
         requestAnimationFrame(this.draw.bind(this))
+        if (document.visibilityState != "visible") {
+            return
+        }
         this.ctx.clearRect(0, 0, this.width, this.height)
         const drawLoading = function drawLoading() {
             this.ctx.fillStyle = "#ffeecc"
@@ -847,63 +851,66 @@ export class Game {
             .forEach((item) => {
                 item.func()
             })
-        this.burnDirCtx.clearRect(0, 0, 200, 200)
-        const burnDirGradient = this.burnDirCtx.createLinearGradient(
-            0,
-            100,
-            100,
-            100,
-        )
-        burnDirGradient.addColorStop(0, "#ffeecc00")
-        burnDirGradient.addColorStop(1, "#ffeeccff")
-        this.burnDirCtx.strokeStyle = burnDirGradient
-        this.burnDirCtx.lineWidth = 2
-        this.burnDirCtx.beginPath()
-        this.burnDirCtx.arc(100, 200, 100, -Math.PI, -Math.PI / 2)
-        this.burnDirCtx.stroke()
-        this.burnDirCtx.fillStyle = "#ffeecc"
-        this.burnDirCtx.beginPath()
-        this.burnDirCtx.moveTo(100 - 6, 100)
-        this.burnDirCtx.lineTo(100, 100 - 6)
-        this.burnDirCtx.lineTo(100 + 6, 100)
-        this.burnDirCtx.lineTo(100, 100 + 6)
-        this.burnDirCtx.fill()
-        let burnDirParticles = []
-        randomNumIds["burnDirPreview"] += Math.floor(
-            Math.max(0, this.burnDirTick - 1000) / 30,
-        )
-        for (
-            let i = Math.max(0, this.burnDirTick - 1000);
-            i < this.burnDirTick;
-            i++
-        ) {
-            if (i % 30 == 1) {
-                burnDirParticles.push({
-                    x: 100,
-                    y: 100,
-                    vx: this.burnPreviewDir == "front" ? 0.2 : -0.2,
-                    vy: (getRandom("burnDirPreview") - 0.5) / 4,
-                    opacity: 0.6,
+        if (this.burnPreviewMoving || this.isFirstDraw) {
+            this.burnDirCtx.clearRect(0, 0, 200, 200)
+            const burnDirGradient = this.burnDirCtx.createLinearGradient(
+                0,
+                100,
+                100,
+                100,
+            )
+            burnDirGradient.addColorStop(0, "#ffeecc00")
+            burnDirGradient.addColorStop(1, "#ffeeccff")
+            this.burnDirCtx.strokeStyle = burnDirGradient
+            this.burnDirCtx.lineWidth = 2
+            this.burnDirCtx.beginPath()
+            this.burnDirCtx.arc(100, 200, 100, -Math.PI, -Math.PI / 2)
+            this.burnDirCtx.stroke()
+            this.burnDirCtx.fillStyle = "#ffeecc"
+            this.burnDirCtx.beginPath()
+            this.burnDirCtx.moveTo(100 - 6, 100)
+            this.burnDirCtx.lineTo(100, 100 - 6)
+            this.burnDirCtx.lineTo(100 + 6, 100)
+            this.burnDirCtx.lineTo(100, 100 + 6)
+            this.burnDirCtx.fill()
+            let burnDirParticles = []
+            randomNumIds["burnDirPreview"] += Math.floor(
+                Math.max(0, this.burnDirTick - 1000) / 30,
+            )
+            for (
+                let i = Math.max(0, this.burnDirTick - 1000);
+                i < this.burnDirTick;
+                i++
+            ) {
+                if (i % 30 == 1) {
+                    burnDirParticles.push({
+                        x: 100,
+                        y: 100,
+                        vx: this.burnPreviewDir == "front" ? 0.2 : -0.2,
+                        vy: (getRandom("burnDirPreview") - 0.5) / 4,
+                        opacity: 0.6,
+                    })
+                }
+                burnDirParticles.forEach((x) => {
+                    x.x += x.vx
+                    x.y += x.vy
+                    x.opacity -= 0.001
                 })
+                burnDirParticles = burnDirParticles.filter((x) => x.opacity > 0)
             }
             burnDirParticles.forEach((x) => {
-                x.x += x.vx
-                x.y += x.vy
-                x.opacity -= 0.001
+                this.burnDirCtx.globalAlpha = x.opacity
+                this.burnDirCtx.beginPath()
+                this.burnDirCtx.ellipse(x.x, x.y, 4, 4, 0, 0, Math.PI * 2)
+                this.burnDirCtx.fill()
             })
-            burnDirParticles = burnDirParticles.filter((x) => x.opacity > 0)
+            this.burnDirCtx.globalAlpha = 1
         }
-        burnDirParticles.forEach((x) => {
-            this.burnDirCtx.globalAlpha = x.opacity
-            this.burnDirCtx.beginPath()
-            this.burnDirCtx.ellipse(x.x, x.y, 4, 4, 0, 0, Math.PI * 2)
-            this.burnDirCtx.fill()
-        })
-        this.burnDirCtx.globalAlpha = 1
         if (this.loading) {
             this.ctx.fillStyle = "#0007"
             this.ctx.fillRect(0, 0, this.width, this.height)
             drawLoading()
         }
+        if (this.isFirstDraw) this.isFirstDraw = false
     }
 }
