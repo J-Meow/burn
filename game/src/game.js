@@ -19,7 +19,7 @@ export class Game {
     playing = false
     startedPlayBeforeNow = false
     lastTick = Date.now()
-    consistentRandom = []
+    consistentRandom = {}
     missionSequence = [
         // { type: "prop", value: 71000 },
         // { type: "burn", value: 1500 },
@@ -34,10 +34,10 @@ export class Game {
     success = false
     endInfo = ""
     remainingBurns = 2
+    burnDirTick = 1000
+    burnPreviewDir = "front"
+    burnPreviewMoving = false
     constructor(canvas, timeControl) {
-        for (let i = 0; i < 1000; i++) {
-            this.consistentRandom.push(Math.random())
-        }
         this.canvas = canvas
         this.timeControl = timeControl
         this.timeControl
@@ -53,6 +53,38 @@ export class Game {
         this.tick()
         this.draw()
         addEventListener("mousemove", this.mouseMove.bind(this))
+        this.burnDirCtx = document
+            .getElementById("burndirdisplay")
+            .getContext("2d")
+        this.burnPreviewDir = document.getElementById("burndirfront").checked
+            ? "front"
+            : "back"
+        document.getElementById("burndirback").addEventListener("input", () => {
+            this.burnPreviewDir = document.getElementById("burndirfront")
+                .checked
+                ? "front"
+                : "back"
+        })
+        document
+            .getElementById("burndirfront")
+            .addEventListener("input", () => {
+                this.burnPreviewDir = document.getElementById("burndirfront")
+                    .checked
+                    ? "front"
+                    : "back"
+            })
+        document
+            .getElementById("burncontrol")
+            .addEventListener(
+                "mouseenter",
+                () => (this.burnPreviewMoving = true),
+            )
+        document
+            .getElementById("burncontrol")
+            .addEventListener(
+                "mouseleave",
+                () => (this.burnPreviewMoving = false),
+            )
         document
             .getElementById("burnduration")
             .addEventListener("input", (ev) => {
@@ -146,6 +178,7 @@ export class Game {
             } else {
                 this.data = data
             }
+            this.explodeTime = Infinity
             const crashTime =
                 this.data["Sat.ElapsedSecs"][
                     this.data["Sat.Altitude"].findIndex((x) => x <= 0)
@@ -355,6 +388,11 @@ export class Game {
         setTimeout(this.tick.bind(this), 1000 / 60)
         const delta = Date.now() - this.lastTick
         this.lastTick = Date.now()
+        if (this.burnPreviewMoving) {
+            this.burnDirTick += delta
+            this.burnDirTick %= 60000
+            if (this.burnDirTick < 1000) this.burnDirTick = 1000
+        }
         if (this.loading)
             this.loadProgressShowing +=
                 ((1 -
@@ -674,14 +712,21 @@ export class Game {
                 },
             })
         }
-        let randomNumId = 0
-        const getRandom = function getRandom() {
-            if (this.consistentRandom.length == randomNumId) {
+        let randomNumIds = {}
+        Object.keys(this.consistentRandom).forEach((x) => (randomNumIds[x] = 0))
+        const getRandom = function getRandom(key = "default") {
+            if (!(key in this.consistentRandom)) {
+                this.consistentRandom[key] = []
+                randomNumIds[key] = 0
+            }
+            if (this.consistentRandom[key].length == randomNumIds[key]) {
                 for (let i = 0; i < 1000; i++) {
-                    this.consistentRandom.push(Math.random())
+                    this.consistentRandom[key].push(Math.random())
                 }
             }
-            return this.consistentRandom[randomNumId++]
+            const numId = randomNumIds[key]
+            randomNumIds[key]++
+            return this.consistentRandom[key][numId]
         }.bind(this)
         let particles = []
         let timeIndex = 0
@@ -802,6 +847,59 @@ export class Game {
             .forEach((item) => {
                 item.func()
             })
+        this.burnDirCtx.clearRect(0, 0, 200, 200)
+        const burnDirGradient = this.burnDirCtx.createLinearGradient(
+            0,
+            100,
+            100,
+            100,
+        )
+        burnDirGradient.addColorStop(0, "#ffeecc00")
+        burnDirGradient.addColorStop(1, "#ffeeccff")
+        this.burnDirCtx.strokeStyle = burnDirGradient
+        this.burnDirCtx.lineWidth = 2
+        this.burnDirCtx.beginPath()
+        this.burnDirCtx.arc(100, 200, 100, -Math.PI, -Math.PI / 2)
+        this.burnDirCtx.stroke()
+        this.burnDirCtx.fillStyle = "#ffeecc"
+        this.burnDirCtx.beginPath()
+        this.burnDirCtx.moveTo(100 - 6, 100)
+        this.burnDirCtx.lineTo(100, 100 - 6)
+        this.burnDirCtx.lineTo(100 + 6, 100)
+        this.burnDirCtx.lineTo(100, 100 + 6)
+        this.burnDirCtx.fill()
+        let burnDirParticles = []
+        randomNumIds["burnDirPreview"] += Math.floor(
+            Math.max(0, this.burnDirTick - 1000) / 30,
+        )
+        for (
+            let i = Math.max(0, this.burnDirTick - 1000);
+            i < this.burnDirTick;
+            i++
+        ) {
+            if (i % 30 == 1) {
+                burnDirParticles.push({
+                    x: 100,
+                    y: 100,
+                    vx: this.burnPreviewDir == "front" ? 0.2 : -0.2,
+                    vy: (getRandom("burnDirPreview") - 0.5) / 4,
+                    opacity: 0.6,
+                })
+            }
+            burnDirParticles.forEach((x) => {
+                x.x += x.vx
+                x.y += x.vy
+                x.opacity -= 0.001
+            })
+            burnDirParticles = burnDirParticles.filter((x) => x.opacity > 0)
+        }
+        burnDirParticles.forEach((x) => {
+            this.burnDirCtx.globalAlpha = x.opacity
+            this.burnDirCtx.beginPath()
+            this.burnDirCtx.ellipse(x.x, x.y, 4, 4, 0, 0, Math.PI * 2)
+            this.burnDirCtx.fill()
+        })
+        this.burnDirCtx.globalAlpha = 1
         if (this.loading) {
             this.ctx.fillStyle = "#0007"
             this.ctx.fillRect(0, 0, this.width, this.height)
