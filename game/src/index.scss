@@ -313,6 +313,7 @@ html {
         }
         input[type="radio"] + label {
             opacity: 0.3;
+            cursor: pointer;
             svg {
                 width: 3.125rem;
                 height: 3.125rem;
