@@ -415,6 +415,31 @@ html {
             color: #a19680;
         }
     }
+    #endboxingame {
+        z-index: 1;
+        position: fixed;
+        right: 0;
+        top: 0;
+        padding: 1rem;
+        border-bottom: 1px solid #ffeecc;
+        border-left: 1px solid #ffeecc;
+        background: black;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        button {
+            font: inherit;
+            color: inherit;
+            background: none;
+            cursor: pointer;
+            border: 0;
+            border-top: 1px solid #ffeecc;
+            width: calc(100% + 2rem);
+            margin: -1rem;
+            margin-top: 1rem;
+            padding: 1rem;
+        }
+    }
     #game {
         position: fixed;
         left: 0;

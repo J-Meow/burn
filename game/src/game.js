@@ -111,9 +111,11 @@ export class Game {
     gameEnd() {
         document.getElementById("ingame").classList.remove("show")
         document.getElementById("end-screen").classList.add("show")
-        document.querySelector("#end-screen h1").innerText = this.success
-            ? "Mission Complete"
-            : "Mission Failed"
+        document
+            .getElementById("endboxingame")
+            .querySelector("span").innerText = document.querySelector(
+            "#end-screen h1",
+        ).innerText = this.success ? "Mission Complete" : "Mission Failed"
         document.getElementById("end-info").innerText = this.endInfo
         document
             .getElementById("end-screen--try-again")
@@ -122,10 +124,18 @@ export class Game {
                 // i will make this better later
             })
         document
+            .getElementById("backtomainendscreen")
+            .addEventListener("click", () => {
+                document.getElementById("ingame").classList.remove("show")
+                document.getElementById("end-screen").classList.add("show")
+            })
+        document
             .getElementById("end-screen--replay")
             .addEventListener("click", () => {
                 document.getElementById("end-screen").classList.remove("show")
                 document.getElementById("ingame").classList.add("show")
+                document.getElementById("endboxingame").style.display = null
+                document.getElementById("burncontrol").style.display = "none"
                 this.unpausableEndTime = -1
                 this.currentSeconds = 0
                 if (!this.playing) this.playPause()
