@@ -1,6 +1,11 @@
 const focalLength = 300
 
 export class Game {
+    events = []
+    on(target, event, callback) {
+        target.addEventListener(event, callback)
+        this.events.push([target, event, callback])
+    }
     camera = {
         translate: {
             x: 0,
@@ -38,68 +43,80 @@ export class Game {
     burnPreviewDir = "front"
     burnPreviewMoving = false
     isFirstDraw = true
-    constructor(canvas, timeControl) {
-        this.canvas = canvas
-        this.timeControl = timeControl
-        this.timeControl
-            .querySelector(".slider")
-            .addEventListener("mousedown", this.sliderStart.bind(this))
-        this.timeControl
-            .querySelector(".playpause")
-            .addEventListener("click", this.playPause.bind(this))
-        addEventListener("mouseup", this.sliderStop.bind(this))
+    currentGameValue
+    constructor(currentGame) {
+        this.currentGameValue = currentGame
+        this.canvas = document.getElementById("game")
+        this.timeControl = document.getElementById("timecontrol")
+        this.on(
+            this.timeControl.querySelector(".slider"),
+            "mousedown",
+            this.sliderStart.bind(this),
+        )
+        this.on(
+            this.timeControl.querySelector(".playpause"),
+            "click",
+            this.playPause.bind(this),
+        )
+        this.on(window, "mouseup", this.sliderStop.bind(this))
         this.ctx = this.canvas.getContext("2d")
         this.resize()
-        addEventListener("resize", this.resize.bind(this))
+        this.on(window, "resize", this.resize.bind(this))
         this.tick()
         this.draw()
-        addEventListener("mousemove", this.mouseMove.bind(this))
+        this.on(window, "mousemove", this.mouseMove.bind(this))
         this.burnDirCtx = document
             .getElementById("burndirdisplay")
             .getContext("2d")
         this.burnPreviewDir = document.getElementById("burndirfront").checked
             ? "front"
             : "back"
-        document.getElementById("burndirback").addEventListener("input", () => {
+        this.on(document.getElementById("burndirback"), "input", () => {
             this.burnPreviewDir = document.getElementById("burndirfront")
                 .checked
                 ? "front"
                 : "back"
         })
-        document
-            .getElementById("burndirfront")
-            .addEventListener("input", () => {
-                this.burnPreviewDir = document.getElementById("burndirfront")
-                    .checked
-                    ? "front"
-                    : "back"
-            })
-        document
-            .getElementById("burncontrol")
-            .addEventListener(
-                "mouseenter",
-                () => (this.burnPreviewMoving = true),
+        this.on(document.getElementById("burndirfront"), "input", () => {
+            this.burnPreviewDir = document.getElementById("burndirfront")
+                .checked
+                ? "front"
+                : "back"
+        })
+        this.on(
+            document.getElementById("burncontrol"),
+            "mouseenter",
+            () => (this.burnPreviewMoving = true),
+        )
+        this.on(
+            document.getElementById("burncontrol"),
+            "mouseleave",
+            () => (this.burnPreviewMoving = false),
+        )
+        this.on(document.getElementById("burnduration"), "input", (ev) => {
+            ev.target.style.setProperty(
+                "--slider-value",
+                parseInt(ev.target.value) / parseInt(ev.target.max),
             )
-        document
-            .getElementById("burncontrol")
-            .addEventListener(
-                "mouseleave",
-                () => (this.burnPreviewMoving = false),
-            )
-        document
-            .getElementById("burnduration")
-            .addEventListener("input", (ev) => {
-                ev.target.style.setProperty(
-                    "--slider-value",
-                    parseInt(ev.target.value) / parseInt(ev.target.max),
-                )
-                document.querySelector('[for="burnduration"]').innerText =
-                    ev.target.value + "s"
-            })
+            document.querySelector('[for="burnduration"]').innerText =
+                ev.target.value + "s"
+        })
         document.getElementById("burnduration").value = 1000
         document
-            .getElementById("burnstart")
-            .addEventListener("click", this.startBurn.bind(this))
+            .getElementById("burnduration")
+            .style.setProperty(
+                "--slider-value",
+                parseInt(document.getElementById("burnduration").value) /
+                    parseInt(document.getElementById("burnduration").max),
+            )
+        document.querySelector('[for="burnduration"]').innerText = "1000s"
+        document.getElementById("remainingburns").innerText =
+            `Remaining burns: ${this.remainingBurns}`
+        this.on(
+            document.getElementById("burnstart"),
+            "click",
+            this.startBurn.bind(this),
+        )
         this.updateData(() => {
             this.moveSlider(0)
             this.playPause()
@@ -117,29 +134,46 @@ export class Game {
             "#end-screen h1",
         ).innerText = this.success ? "Mission Complete" : "Mission Failed"
         document.getElementById("end-info").innerText = this.endInfo
-        document
-            .getElementById("end-screen--try-again")
-            .addEventListener("click", () => {
-                location.reload()
-                // i will make this better later
-            })
-        document
-            .getElementById("backtomainendscreen")
-            .addEventListener("click", () => {
-                document.getElementById("ingame").classList.remove("show")
-                document.getElementById("end-screen").classList.add("show")
-            })
-        document
-            .getElementById("end-screen--replay")
-            .addEventListener("click", () => {
+        this.on(
+            document.getElementById("end-screen--try-again"),
+            "click",
+            () => {
+                this.events.forEach((x) => {
+                    x[0].removeEventListener(x[1], x[2])
+                })
                 document.getElementById("end-screen").classList.remove("show")
+                document.getElementById("endboxingame").style.display = "none"
+                document.getElementById("burncontrol").style.display = null
                 document.getElementById("ingame").classList.add("show")
-                document.getElementById("endboxingame").style.display = null
-                document.getElementById("burncontrol").style.display = "none"
-                this.unpausableEndTime = -1
-                this.currentSeconds = 0
-                if (!this.playing) this.playPause()
-            })
+                this.currentGameValue = new Game(this.currentGameValue)
+            },
+        )
+        this.on(
+            document.getElementById("end-screen--to-title"),
+            "click",
+            () => {
+                this.events.forEach((x) => {
+                    x[0].removeEventListener(x[1], x[2])
+                })
+                document.getElementById("title-screen").classList.add("show")
+                document.getElementById("end-screen").classList.remove("show")
+                document.getElementById("endboxingame").style.display = "none"
+                document.getElementById("burncontrol").style.display = null
+            },
+        )
+        this.on(document.getElementById("backtomainendscreen"), "click", () => {
+            document.getElementById("ingame").classList.remove("show")
+            document.getElementById("end-screen").classList.add("show")
+        })
+        this.on(document.getElementById("end-screen--replay"), "click", () => {
+            document.getElementById("end-screen").classList.remove("show")
+            document.getElementById("ingame").classList.add("show")
+            document.getElementById("endboxingame").style.display = null
+            document.getElementById("burncontrol").style.display = "none"
+            this.unpausableEndTime = -1
+            this.currentSeconds = 0
+            if (!this.playing) this.playPause()
+        })
     }
     updateData(callback, reportStartTime = 0) {
         this.totalSeconds = this.missionSequence.reduce(
@@ -200,14 +234,20 @@ export class Game {
                 ]
             if (crashTime && (!tooFarTime || crashTime < tooFarTime)) {
                 this.explodeTime = crashTime
-                if (crashTime < this.totalSeconds - this.lookAheadTime) {
+                if (
+                    crashTime < this.totalSeconds - this.lookAheadTime ||
+                    this.remainingBurns == 0
+                ) {
                     this.unpausableEndTime = crashTime + 60 * 20
                     this.success = false
                     this.endInfo = "Crashed into Earth"
                 }
             }
             if (tooFarTime && (!crashTime || tooFarTime < crashTime)) {
-                if (tooFarTime < this.totalSeconds - this.lookAheadTime) {
+                if (
+                    tooFarTime < this.totalSeconds - this.lookAheadTime ||
+                    this.remainingBurns == 0
+                ) {
                     this.unpausableEndTime = tooFarTime
                     this.success = false
                     this.endInfo = "Drifted into space"

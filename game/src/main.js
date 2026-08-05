@@ -15,10 +15,7 @@ if (sessionStorage.getItem("nosplash") == "true") {
 document.getElementById("title-screen--play").addEventListener("click", () => {
     document.getElementById("title-screen").classList.remove("show")
     document.getElementById("ingame").classList.add("show")
-    currentGame = new Game(
-        document.getElementById("game"),
-        document.getElementById("timecontrol"),
-    )
+    currentGame = new Game(currentGame)
 })
 if (sessionStorage.getItem("indev-notif-dismissed") == "true") {
     document.getElementById("indev-notif").style.display = "none"
